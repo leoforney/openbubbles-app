@@ -18,6 +18,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:convert';
 import 'package:bluebubbles/src/rust/api/api.dart' as api;
@@ -433,16 +434,26 @@ class _FindMyState extends OptimizedState<FindMy> with AutomaticKeepAliveClientM
         )
       ],
     ));
-    return userPosition[mainLocation]!.id == null || widget.isPopup || !isLive ? child : InkWell(
+    final pos = userPosition[mainLocation];
+    return widget.isPopup ? child : InkWell(
       onTap: () async {
-        await Navigator.of(Get.context!).push(
-          ThemeSwitcher.buildPageRoute(
-            builder: (BuildContext context) {
-              return FindMyPage(defaultFriend: userPosition[mainLocation]!.id);
-            },
-          ),
-        );
+        if (pos != null && pos.id != null && isLive) {
+          await Navigator.of(Get.context!).push(
+            ThemeSwitcher.buildPageRoute(
+              builder: (BuildContext context) {
+                return FindMyPage(defaultFriend: pos.id);
+              },
+            ),
+          );
+        } else if (pos != null && pos.latitude != null && pos.longitude != null) {
+          try {
+            await launchUrl(Uri.parse("https://maps.google.com/?q=${pos.latitude},${pos.longitude}"), mode: LaunchMode.externalApplication);
+          } catch (e) {
+            // ignore
+          }
+        }
       },
-      child: child);
+      child: child,
+    );
   }
 }

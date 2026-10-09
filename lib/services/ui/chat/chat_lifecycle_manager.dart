@@ -14,8 +14,10 @@ class ChatLifecycleManager {
   bool isActive = false;
   bool isAlive = false;
   ConversationViewController? controller;
+  late DateTime lastMessageDate;
 
   ChatLifecycleManager(this.chat) {
+    lastMessageDate = chat.latestMessage.dateCreated ?? DateTime.fromMillisecondsSinceEpoch(0);
     if (!kIsWeb) {
       final chatQuery = Database.chats.query(Chat_.guid.equals(chat.guid)).watch();
       sub = chatQuery.listen((Query<Chat> query) async{
@@ -23,8 +25,9 @@ class ChatLifecycleManager {
           return Database.chats.get(chat.id!);
         });
         if (_chat != null) {
-                    final newDate = Chat.getMessages(_chat, limit: 1, getDetails: false).firstOrNull?.dateCreated ?? DateTime.fromMillisecondsSinceEpoch(0);
-          bool shouldSort = chat.latestMessage.dateCreated != newDate;
+          final newDate = _chat.dbLatestMessage.dateCreated ?? DateTime.fromMillisecondsSinceEpoch(0);
+          bool shouldSort = lastMessageDate != newDate;
+          lastMessageDate = newDate;
 
           chats.updateChat(_chat, shouldSort: shouldSort);
           chat = _chat.merge(chat);

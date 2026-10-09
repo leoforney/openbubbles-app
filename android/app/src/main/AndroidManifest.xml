@@ -421,6 +421,23 @@
 
                 <data android:scheme="imessage" />
             </intent-filter>
+            
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.DIRECT_SHARE" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
 
             <meta-data
                 android:name="android.app.shortcuts"
@@ -435,6 +452,10 @@
                 android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
                 android:value="true" />
         </activity>
+        <activity
+            android:name=".ComposeHomeActivity"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            android:exported="false" />
         <activity
             android:name=".BubbleActivity"
             android:allowEmbedded="true"

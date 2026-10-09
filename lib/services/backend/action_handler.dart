@@ -84,10 +84,14 @@ class ActionHandler extends GetxService {
       for (Message message in messages) {
         message.generateTempGuid();
         await c.addMessage(message, clearNotificationsIfFromMe: clearNotificationsIfFromMe);
+        chats.updateChat(c, shouldSort: true);
+        cm.getChatController(c.guid)?.lastMessageDate = message.dateCreated!;
       }
     } else {
       m.generateTempGuid();
       await c.addMessage(m, clearNotificationsIfFromMe: clearNotificationsIfFromMe);
+      chats.updateChat(c, shouldSort: true);
+      cm.getChatController(c.guid)?.lastMessageDate = m.dateCreated!;
       messages.add(m);
     }
     return messages;
@@ -400,6 +404,8 @@ class ActionHandler extends GetxService {
       }
     }
     await c.addMessage(m);
+    chats.updateChat(c, shouldSort: true);
+    cm.getChatController(c.guid)?.lastMessageDate = m.dateCreated!;
   }
 
   Future<void> sendAttachment(Chat c, Message m, bool isAudioMessage) async {

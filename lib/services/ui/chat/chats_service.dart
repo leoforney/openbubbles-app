@@ -138,9 +138,9 @@ class ChatsService extends GetxService {
     // update share targets
     if (Platform.isAndroid) {
       StartupTasks.waitForUI().then((_) async {
-        for (Chat c in chats.where((e) => !isNullOrEmpty(e.title)).take(4)) {
+        for (Chat c in chats.where((e) => !isNullOrEmpty(e.properTitle)).take(4)) {
           await mcs.invokeMethod("push-share-targets", {
-            "title": c.title,
+            "title": c.properTitle,
             "guid": c.guid,
             "icon": await avatarAsBytes(chat: c, quality: 256),
           });

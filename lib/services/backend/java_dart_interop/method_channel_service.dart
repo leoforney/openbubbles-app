@@ -50,7 +50,7 @@ class MethodChannelService extends GetxService {
     Logger.debug("MethodChannelService initialized");
   }
 
-  Future<bool> _callHandler(MethodCall call) async {
+  Future<dynamic> _callHandler(MethodCall call) async {
     final Map<String, dynamic>? arguments = call.arguments is String ? jsonDecode(call.arguments) : call.arguments?.cast<String, Object>();
     
     // ONLY RETURN Future.value or Future.error
@@ -58,6 +58,94 @@ class MethodChannelService extends GetxService {
     // Future.value(true) will have the engine stop trying to call the method
     
     switch (call.method) {
+      case "getChats":
+        final chats = Database.chats.getAll();
+        chats.sort(Chat.sort); // Use existing recency sort
+        return chats.map((c) {
+          Uint8List? avatarBytes;
+          if (c.participants.length == 1) {
+            avatarBytes = c.participants.first.contact?.avatar;
+          }
+          return {
+            "id": c.id,
+            "name": c.title ?? c.displayName ?? c.chatIdentifier ?? "Unknown",
+            "avatarPath": c.customAvatarPath,
+            "avatarBytes": avatarBytes,
+            "date": c.dbOnlyLatestMessageDate?.millisecondsSinceEpoch ?? 0,
+            "lastMessage": c.latestMessage.text ?? "",
+            "isGroup": c.isGroup,
+            "participantInfo": c.participants.map((p) => {
+               "address": p.address,
+               "name": p.contact?.displayName ?? p.address,
+               "avatarBytes": p.contact?.avatar,
+            }).toList()
+          };
+        }).toList();
+      case "getMessages":
+        final chatId = arguments?["chatId"] as int;
+        final offset = arguments?["offset"] as int? ?? 0;
+        final limit = arguments?["limit"] as int? ?? 50;
+        
+        final chat = Database.chats.get(chatId);
+        if (chat == null) return [];
+        
+        final messages = Chat.getMessages(chat, offset: offset, limit: limit);
+        return messages.map((m) {
+          m.fetchAttachments();
+          final attachments = m.attachments.where((a) => a != null).map((a) => {
+            "guid": a!.guid,
+            "mimeType": a.mimeType,
+            "path": a.path,
+          }).toList();
+          
+          return {
+            "id": m.id,
+            "text": m.text ?? "",
+            "isIncoming": !(m.isFromMe ?? false),
+            "date": m.dateCreated?.millisecondsSinceEpoch ?? 0,
+            "dateDelivered": m.dateDelivered?.millisecondsSinceEpoch ?? 0,
+            "dateRead": m.dateRead?.millisecondsSinceEpoch ?? 0,
+            "isError": m.error > 0,
+            "attachments": attachments,
+            "senderName": m.handle?.contact?.displayName ?? m.handle?.address,
+          };
+        }).toList();
+      case "getMessages":
+        final chatId = arguments?["chatId"] as int;
+        final offset = arguments?["offset"] as int? ?? 0;
+        final limit = arguments?["limit"] as int? ?? 50;
+        
+        final chat = Database.chats.get(chatId);
+        if (chat == null) return [];
+        
+        final messages = Chat.getMessages(chat, offset: offset, limit: limit);
+        return messages.map((m) {
+          m.fetchAttachments();
+          final attachments = m.attachments.where((a) => a != null).map((a) => {
+            "guid": a!.guid,
+            "mimeType": a.mimeType,
+            "path": a.path,
+          }).toList();
+          
+          return {
+            "id": m.id,
+            "text": m.text ?? "",
+            "isIncoming": !(m.isFromMe ?? false),
+            "date": m.dateCreated?.millisecondsSinceEpoch ?? 0,
+            "attachments": attachments,
+            "senderName": m.handle?.contact?.displayName ?? m.handle?.address,
+          };
+        }).toList();
+      case "getMessages":
+        final chatId = arguments?["chatId"] as int;
+        final chat = Database.chats.get(chatId);
+        if (chat == null) return [];
+        final messages = Chat.getMessages(chat, limit: 50);
+        return messages.map((m) => {
+          "id": m.id,
+          "text": m.text ?? "",
+          "isIncoming": !(m.isFromMe ?? false)
+        }).toList();
       case "SMSMsg":
         try {
           if (!ss.settings.isSmsRouter.value) return true;

@@ -1310,7 +1310,7 @@ class Chat {
 
     // If the message was saved correctly, update this chat's latestMessage info,
     // but only if the incoming message's date is newer
-    if ((newMessage?.id != null || kIsWeb) && checkForMessageText) {
+    if ((newMessage?.id != null || message.temp || kIsWeb) && checkForMessageText) {
       isNewer = message.dateCreated!.isAfter(latest.dateCreated!)
           || (message.guid != latest.guid && message.dateCreated == latest.dateCreated);
       if (isNewer) {
@@ -1694,7 +1694,13 @@ class Chat {
     hasUnreadMessage ??= other.hasUnreadMessage;
     isArchived ??= other.isArchived;
     isPinned ??= other.isPinned;
-    _latestMessage ??= other.latestMessage;
+    if (_latestMessage == null) {
+      _latestMessage = other.latestMessage;
+    } else if (other.latestMessage.dateCreated != null && _latestMessage!.dateCreated != null) {
+      if (other.latestMessage.dateCreated!.isAfter(_latestMessage!.dateCreated!)) {
+        _latestMessage = other.latestMessage;
+      }
+    }
     muteArgs ??= other.muteArgs;
     title ??= other.title;
     dateDeleted ??= other.dateDeleted;

@@ -108,7 +108,9 @@ class MaterialOverflowMenu extends StatelessWidget {
         ),
       ) : null,
       onSelected: (int value) async {
-        if (value == 0) {
+        if (value == 99) {
+          mcs.invokeMethod("launch-native-home");
+        } else if (value == 0) {
           chats.markAllAsRead();
         } else if (value == 1) {
           goToArchived(context);
@@ -136,6 +138,13 @@ class MaterialOverflowMenu extends StatelessWidget {
       },
       itemBuilder: (context) {
         return <PopupMenuItem<int>>[
+          PopupMenuItem(
+            value: 99,
+            child: Text(
+              'Try Native Jetpack Compose',
+              style: context.textTheme.bodyLarge!.apply(color: context.theme.colorScheme.primary),
+            ),
+          ),
           PopupMenuItem(
             value: 0,
             child: Text(
@@ -296,6 +305,11 @@ class CupertinoOverflowMenu extends StatelessWidget {
           onTap: () => goToProfile(context),
         ),
         PullDownMenuDivider.large(color: context.theme.colorScheme.background.withOpacity(0.5)),
+        PullDownMenuItem(
+          title: 'Try Native Jetpack Compose',
+          icon: CupertinoIcons.rocket,
+          onTap: () => mcs.invokeMethod("launch-native-home"),
+        ),
         PullDownMenuItem(
           title: 'Mark All As Read',
           icon: CupertinoIcons.check_mark_circled,

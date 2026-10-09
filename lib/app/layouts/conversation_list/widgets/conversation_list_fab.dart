@@ -171,7 +171,7 @@ class _ConversationListFABState extends CustomState<ConversationListFAB, void, C
                             size: 24,
                           ),
                         ),
-                        onPressed: () => controller.openNewChatCreator(context),
+                        onPressed: () => mcs.invokeMethod("launch-native-home"),
                       ),
                     ),
                   ),

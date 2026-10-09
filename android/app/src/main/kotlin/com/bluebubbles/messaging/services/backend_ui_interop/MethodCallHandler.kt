@@ -144,6 +144,12 @@ class MethodCallHandler {
             EAPAKAGateway.tag -> EAPAKAGateway().handleMethodCall(call, result, context)
             KeystoreUnlockHandler.tag -> KeystoreUnlockHandler().handleMethodCall(call, result, context)
             "ready" -> { MainActivity.engine_ready = true }
+            "launch-native-home" -> {
+                val intent = android.content.Intent(context, com.bluebubbles.messaging.ComposeHomeActivity::class.java)
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                result.success(null)
+            }
             else -> {
                 val error = "Could not find method call handler for ${call.method}!"
                 Log.d(Constants.logTag, error)

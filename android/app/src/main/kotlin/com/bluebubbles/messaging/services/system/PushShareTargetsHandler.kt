@@ -39,7 +39,7 @@ class PushShareTargetsHandler: MethodCallHandlerImpl() {
         val launcherIntent = Intent(context, MainActivity::class.java)
             .putExtra("chatGuid", guid)
             .putExtra("bubble", false)
-            .setAction(Intent.ACTION_DEFAULT)
+            .setAction(Intent.ACTION_VIEW)
         val person = Person.Builder().setName(name)
         if (adaptiveIcon != null) {
             person.setIcon(adaptiveIcon)
@@ -53,10 +53,12 @@ class PushShareTargetsHandler: MethodCallHandlerImpl() {
             .setLongLived(true)
             .setIsConversation()
             .setPerson(person.build())
+            .addCapabilityBinding("actions.intent.CREATE_MESSAGE")
         if (adaptiveIcon != null) {
             shortcut.setIcon(adaptiveIcon)
         }
 
         ShortcutManagerCompat.pushDynamicShortcut(context, shortcut.build())
+        ShortcutManagerCompat.reportShortcutUsed(context, guid)
     }
 }
