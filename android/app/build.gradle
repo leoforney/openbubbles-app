@@ -52,7 +52,7 @@ android {
         versionName flutterVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
-            abiFilters "arm64-v8a"
+            abiFilters "arm64-v8a", "armeabi-v7a"
         }
     }
 
@@ -145,6 +145,114 @@ android {
 flutter {
     source '../..'
 }
+
+// ---------------------------------------------------------------------------
+// Rust Native Build & UniFFI Binding Generation
+// ---------------------------------------------------------------------------
+def rustRootDir = rootProject.file("../rust")
+def cargoTargetDir = rootProject.file(".cargo_target")
+def rustLibName = "rust_lib_bluebubbles"
+def rustAbis = ["arm64-v8a": "aarch64-linux-android", "armeabi-v7a": "armv7-linux-androideabi"]
+def rustApi = 28
+
+// Host build + UniFFI Kotlin bindings task
+def hostSoFile = new File(cargoTargetDir, "debug/lib${rustLibName}.so")
+def uniffiOutDir = file("src/main/kotlin")
+
+tasks.register("rustUniffiKotlin") {
+    inputs.files(
+        file("${rustRootDir}/src/native.rs"),
+        file("${rustRootDir}/src/keystore.rs"),
+        file("${rustRootDir}/Cargo.toml")
+    )
+    outputs.dir(new File(uniffiOutDir, "uniffi"))
+
+    doLast {
+        def ndkDir = android.ndkDirectory ?: (android.ndkVersion ? new File(android.sdkDirectory, "ndk/${android.ndkVersion}") : null)
+        project.exec {
+            workingDir = rustRootDir
+            commandLine "cargo", "build", "--target-dir", cargoTargetDir.absolutePath
+            if (ndkDir != null && ndkDir.exists()) {
+                environment "NDK_HOME", ndkDir.absolutePath
+                environment "ANDROID_NDK_HOME", ndkDir.absolutePath
+            }
+        }
+        project.exec {
+            workingDir = rustRootDir
+            commandLine "cargo", "run", "--bin", "uniffi-bindgen", "generate",
+                "--library", hostSoFile.absolutePath,
+                "--language", "kotlin",
+                "--out-dir", uniffiOutDir.absolutePath
+        }
+    }
+}
+
+android.applicationVariants.all { variant ->
+    def buildType = variant.buildType.name
+    def isRelease = (buildType == "release")
+    def variantOutputsDir = file("${buildDir}/rustlib/${variant.name}")
+
+    def rustBuildTasks = []
+
+    rustAbis.each { abi, targetTriple ->
+        def taskName = "rustBuild_${rustLibName}_${abi}_${variant.name}"
+        def outAbiDir = new File(variantOutputsDir, abi)
+        def targetProfile = isRelease ? "release" : "debug"
+        def builtSoFile = new File(cargoTargetDir, "${targetTriple}/${targetProfile}/lib${rustLibName}.so")
+
+        def rustTask = tasks.register(taskName, Exec) {
+            workingDir = rustRootDir
+
+            def cmd = ["cargo", "ndk", "-t", abi, "-P", "${rustApi}", "build", "--target-dir", cargoTargetDir.absolutePath]
+            if (isRelease) {
+                cmd.add("--release")
+            }
+            commandLine cmd
+
+            def ndkDir = android.ndkDirectory ?: (android.ndkVersion ? new File(android.sdkDirectory, "ndk/${android.ndkVersion}") : null)
+            if (ndkDir != null && ndkDir.exists()) {
+                environment "NDK_HOME", ndkDir.absolutePath
+                environment "ANDROID_NDK_HOME", ndkDir.absolutePath
+            }
+
+            inputs.files(
+                fileTree(rustRootDir) {
+                    include "**/*.rs"
+                    exclude "target/**"
+                },
+                fileTree(rootProject.file("../rustpush")) {
+                    include "**/*.rs"
+                    exclude "target/**"
+                },
+                file("${rustRootDir}/Cargo.toml"),
+                file("${rustRootDir}/Cargo.lock"),
+                file("${rustRootDir}/build.rs"),
+                file("${rustRootDir}/.cargo/config.toml")
+            )
+            outputs.dir(outAbiDir)
+
+            doLast {
+                outAbiDir.mkdirs()
+                copy {
+                    from builtSoFile
+                    into outAbiDir
+                }
+            }
+        }
+        rustBuildTasks.add(rustTask)
+    }
+
+    variant.sourceSets.each { sourceSet ->
+        sourceSet.jniLibs.srcDir(variantOutputsDir)
+    }
+
+    def capitalizedVariant = variant.name.capitalize()
+    tasks.matching { it.name in ["merge${capitalizedVariant}NativeLibs", "merge${variant.buildType.name.capitalize()}NativeLibs"] }.configureEach { mergeTask ->
+        mergeTask.dependsOn(rustBuildTasks)
+        mergeTask.dependsOn("rustUniffiKotlin")
+    }
+}
+
 
 // For Cloud Firestore okio error
 configurations.all { configuration ->
