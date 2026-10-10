@@ -66,7 +66,7 @@ abstract class CargoKitBuildTask extends DefaultTask {
             environment "CARGOKIT_TOOL_TEMP_DIR", "${buildDir}/build_tool"
             environment "CARGOKIT_MANIFEST_DIR", manifestDir
             environment "CARGOKIT_CONFIGURATION", buildMode
-            environment "CARGOKIT_TARGET_TEMP_DIR", buildDir
+            environment "CARGOKIT_TARGET_TEMP_DIR", "${project.rootProject.projectDir}/.cargo_target_temp"
             environment "CARGOKIT_OUTPUT_DIR", outputDir
             environment "CARGOKIT_NDK_VERSION", ndkVersion
             environment "CARGOKIT_SDK_DIR", sdkDirectory

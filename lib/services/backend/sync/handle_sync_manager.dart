@@ -10,7 +10,6 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:tuple/tuple.dart';
 import 'package:universal_io/io.dart';
-import 'package:windows_taskbar/windows_taskbar.dart';
 
 class HandleSyncManager extends SyncManager {
   final tag = 'HandleSyncManager';
@@ -51,9 +50,6 @@ class HandleSyncManager extends SyncManager {
     }
 
     super.start();
-    if (kIsDesktop && Platform.isWindows) {
-      await WindowsTaskbar.setProgressMode(TaskbarProgressMode.indeterminate);
-    }
 
     flush();
     addToOutput('Fetching handles from the server...');
@@ -70,9 +66,6 @@ class HandleSyncManager extends SyncManager {
     }
 
     try {
-      if (kIsDesktop && Platform.isWindows) {
-        await WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal);
-      }
 
       // First, backup the handles so we can restore them if required later.
       backupHandles();
@@ -130,10 +123,6 @@ class HandleSyncManager extends SyncManager {
         if (handleProgress >= 1.0) {
           // When we've hit the last chunk, we're finished
           await complete();
-          if (kIsDesktop && Platform.isWindows) {
-            await WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress);
-            await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-          }
         } else if (status.value == SyncStatus.STOPPING) {
           // If we are supposed to be stopping, complete the future.
           // Also treat it as if there was an error and restore the original handles.
@@ -142,21 +131,12 @@ class HandleSyncManager extends SyncManager {
             restoreOriginalHandles();
             completer!.complete();
           }
-
-          if (kIsDesktop && Platform.isWindows) {
-            await WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress);
-            await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-          }
         }
       }
     } catch (e, s) {
       addToOutput('Failed to sync handles! Error: ${e.toString()}', level: LogLevel.ERROR);
       addToOutput(s.toString(), level: LogLevel.ERROR);
       completeWithError(e.toString());
-      if (kIsDesktop && Platform.isWindows) {
-        await WindowsTaskbar.setProgressMode(TaskbarProgressMode.error);
-        await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-      }
     }
 
     return completer!.future;

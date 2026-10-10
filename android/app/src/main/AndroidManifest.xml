@@ -454,7 +454,7 @@
         </activity>
         <activity
             android:name=".ComposeHomeActivity"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            android:theme="@style/NormalTheme"
             android:exported="false" />
         <activity
             android:name=".BubbleActivity"

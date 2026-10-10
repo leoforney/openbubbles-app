@@ -1,10 +1,7 @@
 import 'package:async_task/async_task.dart';
-import 'package:bluebubbles/helpers/types/constants.dart';
 import 'package:bluebubbles/utils/logger/task_logger.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:universal_io/io.dart';
 
 bool isNullOrEmpty(dynamic input) {
   if (input == null) return true;
@@ -50,13 +47,13 @@ Future<T?> createAsyncTask<T>(AsyncTask<List<dynamic>, T> task) async {
   return task.result;
 }
 
-bool get kIsDesktop => (Platform.isWindows || Platform.isLinux || Platform.isMacOS) && !kIsWeb;
+const bool kIsDesktop = false;
 
-bool get isSnap => !kIsWeb && Platform.isLinux && Platform.environment.containsKey('SNAP');
+const bool isSnap = false;
 
-bool get isFlatpak => !kIsWeb && Platform.isLinux && Platform.environment.containsKey('FLATPAK_ID');
+const bool isFlatpak = false;
 
-bool get isMsix => !kIsWeb && Platform.isWindows && Platform.resolvedExecutable.contains('WindowsApps') && Platform.resolvedExecutable.contains(msStorePackageName);
+const bool isMsix = false;
 
 /// From https://github.com/modulovalue/dart_intersperse/blob/master/lib/src/intersperse.dart
 Iterable<T> intersperse<T>(T element, Iterable<T> iterable) sync* {
@@ -100,3 +97,57 @@ String prettyDuration(Duration duration) {
     return joined;
   }
 }
+
+enum TitleBarStyle { hidden, normal }
+
+class _WindowManagerStub {
+  Future<void> show() async {}
+  Future<void> setTitleBarStyle(dynamic style) async {}
+  Future<void> setPreventClose(bool val) async {}
+}
+
+final windowManager = _WindowManagerStub();
+
+enum LocalNotificationCloseReason { userAction, timedOut, unknown }
+
+class LocalNotification {
+  String? imagePath;
+  String title;
+  String? subtitle;
+  String? body;
+  dynamic duration;
+  List<dynamic>? actions;
+  Function? onClick;
+  Function? onClickAction;
+  Function? onClose;
+
+  LocalNotification({
+    this.imagePath,
+    this.title = "",
+    this.subtitle,
+    this.body,
+    this.duration,
+    this.actions,
+    this.onClick,
+    this.onClickAction,
+    this.onClose,
+  });
+
+  Future<void> show() async {}
+  Future<void> close() async {}
+  Future<void> destroy() async {}
+}
+
+class LocalNotificationAction {
+  String text;
+  LocalNotificationAction({required this.text});
+}
+
+enum LocalNotificationDuration { short, long }
+
+class _LocalNotifierStub {
+  Future<void> setup({required String appName}) async {}
+  Future<void> notify(dynamic n) async {}
+}
+
+final localNotifier = _LocalNotifierStub();

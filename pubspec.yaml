@@ -31,7 +31,6 @@ dependencies:
       url: https://github.com/SimformSolutionsPvtLtd/audio_waveforms
       ref: main
   auto_size_text: ^3.0.0
-  bitsdojo_window: ^0.1.6
   chunked_stream: ^1.4.2
   collection: ^1.18.0
   confetti: ^0.7.0
@@ -40,10 +39,6 @@ dependencies:
   csslib: ^1.0.0
   cupertino_icons: ^1.0.6
   defer_pointer: ^0.0.2
-  desktop_webview_auth:
-    git:
-      url: https://github.com/BlueBubblesApp/flutter_desktop_webview_auth.git
-      ref: webkit2gtk-4.1
   device_info_plus: ^10.1.0
   dio: ^5.4.2+1
   disable_battery_optimization: # for jcenter() gradle deprecation
@@ -68,7 +63,6 @@ dependencies:
       path: packages/firebase_dart
   flex_color_picker: ^3.4.1
   flex_color_scheme: 8.2.0
-  flutter_acrylic: ^1.1.3
   flutter_audio_waveforms: ^1.2.1+8
   flutter_displaymode: ^0.6.0 # android only
   flutter_dotenv: ^5.1.0
@@ -104,12 +98,7 @@ dependencies:
   intl: ^0.19.0
   js: ^0.7.1
   languagetool_textfield: ^0.0.6
-  launch_at_startup: ^0.3.1
   local_auth: ^2.2.0
-  local_notifier:
-    git:
-      url: https://github.com/BlueBubblesApp/local_notifier.git
-      ref: 7526556fe2beb5c61ddede34e1992726907cd7ae
   maps_launcher: # gradle namespace issue
     git:
       url: https://github.com/pikaju/flutter-maps-launcher.git
@@ -119,19 +108,15 @@ dependencies:
   media_kit_video: ^1.2.4                        # For video rendering.
   media_kit_native_event_loop: ^1.0.8            # Support for higher number of concurrent instances & better performance.
   media_kit_libs_android_video: ^1.3.6           # Android package for video native libraries.
-  media_kit_libs_windows_video: ^1.0.9           # Windows package for video native libraries.
-  media_kit_libs_linux: ^1.1.3                   # GNU/Linux dependency package.
   metadata_fetch: ^0.4.1
   mime_type: ^1.0.0
-  mobile_scanner: ^5.1.1 # no desktop support
-  msix: ^3.16.8
+  mobile_scanner: ^5.1.1
   multi_value_listenable_builder: ^0.0.2
   network_info_plus: ^6.0.1
   network_tools: ^5.0.2
   numberpicker: ^2.1.2
   objectbox: ^4.0.1
   objectbox_flutter_libs: any
-  on_exit: ^1.0.0
   open_filex: ^4.7.0
   package_info_plus: ^8.0.0
   particles_flutter: ^1.0.1
@@ -148,7 +133,6 @@ dependencies:
   record: ^5.0.5
   reorderables: ^0.6.0
   saver_gallery: ^3.0.3
-  screen_retriever: ^0.1.9
   scroll_to_index: ^3.0.1
   secure_application:  # no linux support, gradle namespace issue
     git:
@@ -169,11 +153,8 @@ dependencies:
       url: https://github.com/ravitejaavv/store_checker
       ref: master
   synchronized: ^3.1.0+1
-  system_tray: ^2.0.3
-  super_drag_and_drop: ^0.8.20
   supercharged: ^2.1.1
   system_info2: ^4.0.0
-  tray_manager: ^0.2.3
   tuple: ^2.0.2
   unifiedpush: ^5.0.1
   universal_html: ^2.2.4 # cross-platform dart:html implementation
@@ -186,8 +167,6 @@ dependencies:
     git:
       url: https://github.com/BlueBubblesApp/video_thumbnail.git
       ref: master
-  window_manager: ^0.4.2
-  windows_taskbar: ^1.1.2
   logger: ^2.4.0
   archive: ^3.6.1
   in_app_review: ^2.0.9
@@ -223,14 +202,7 @@ dependency_overrides:
   intl: ^0.19.0 # firebase_dart
   js: ^0.7.1 # socket_io_client
   material_color_utilities: ^0.11.1 # flutter test SDK
-  permission_handler_platform_interface: ^4.2.1 # BB permission_handler_windows
-  permission_handler_windows: # https://github.com/Baseflow/flutter-permission-handler/issues/983
-    git:
-      url: https://github.com/BlueBubblesApp/flutter-permission-handler.git
-      ref: 7912a76a3208e876c2275e1a87003ede3903abc8
-      path: permission_handler_windows
   uuid: ^4.4.0 # firebase_dart
-  win32: ^5.5.3 # for build issue in flutter v3.24.0
   frontend_server_client: ^4.0.0  # for build_runner issues on v3.24.0
 
 dev_dependencies:
@@ -248,7 +220,6 @@ dev_dependencies:
 
 flutter_icons:
   android: true
-  ios: false
   image_path: "assets/icon/icon.png"
   adaptive_icon_foreground: "assets/icon/adaptive-foreground.png"
   adaptive_icon_background: "#4990de"
@@ -358,19 +329,3 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
-msix_config:
-  display_name: OpenBubbles
-  publisher_display_name: OpenBubbles
-  identity_name: OpenBubbles.OpenBubbles
-  msix_version: 1.12.300.0
-  publisher: CN=A7258527-3356-42FA-AABD-F6BAA9420BDE
-  vs_generated_images_folder_path: windows/icons
-  logo_path: assets/icon/icon.png
-  store: true
-  #  certificate_path: ../bluebubbles.pfx
-  #  certificate_password: BlueBubbles
-  icons_background_color: transparent
-  languages: en-us
-  architecture: x64
-  capabilities: internetClient, location, microphone, webcam
-  protocol_activation: imessage

@@ -207,46 +207,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.12"
-  bitsdojo_window:
-    dependency: "direct main"
-    description:
-      name: bitsdojo_window
-      sha256: "88ef7765dafe52d97d7a3684960fb5d003e3151e662c18645c1641c22b873195"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.6"
-  bitsdojo_window_linux:
-    dependency: transitive
-    description:
-      name: bitsdojo_window_linux
-      sha256: "9519c0614f98be733e0b1b7cb15b827007886f6fe36a4fb62cf3d35b9dd578ab"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.4"
-  bitsdojo_window_macos:
-    dependency: transitive
-    description:
-      name: bitsdojo_window_macos
-      sha256: f7c5be82e74568c68c5b8449e2c5d8fd12ec195ecd70745a7b9c0f802bb0268f
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.4"
-  bitsdojo_window_platform_interface:
-    dependency: transitive
-    description:
-      name: bitsdojo_window_platform_interface
-      sha256: "65daa015a0c6dba749bdd35a0f092e7a8ba8b0766aa0480eb3ef808086f6e27c"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
-  bitsdojo_window_windows:
-    dependency: transitive
-    description:
-      name: bitsdojo_window_windows
-      sha256: fa982cf61ede53f483e50b257344a1c250af231a3cdc93a7064dd6dc0d720b68
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.6"
   boolean_selector:
     dependency: transitive
     description:
@@ -439,14 +399,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
-  console:
-    dependency: transitive
-    description:
-      name: console
-      sha256: e04e7824384c5b39389acdd6dc7d33f3efe6b232f6f16d7626f194f6a01ad69a
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.0"
   convert:
     dependency: transitive
     description:
@@ -559,15 +511,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.2"
-  desktop_webview_auth:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "webkit2gtk-4.1"
-      resolved-ref: "7210ff6a4975d1e877c9ccfaa6ecb7a18013f0b7"
-      url: "https://github.com/BlueBubblesApp/flutter_desktop_webview_auth.git"
-    source: git
-    version: "0.0.15"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -879,14 +822,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_acrylic:
-    dependency: "direct main"
-    description:
-      name: flutter_acrylic
-      sha256: b3996dbde5abf5823cc9ead4cf2e5267c3181f15585fe47ce4dc4472e7ec827a
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.4"
   flutter_audio_waveforms:
     dependency: "direct main"
     description:
@@ -1351,14 +1286,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.6.6"
-  get_it:
-    dependency: transitive
-    description:
-      name: get_it
-      sha256: d85128a5dae4ea777324730dc65edd9c9f43155c109d5cc0a69cab74139fbac1
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.7.0"
   giphy_get:
     dependency: "direct main"
     description:
@@ -1871,22 +1798,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
-  irondash_engine_context:
-    dependency: transitive
-    description:
-      name: irondash_engine_context
-      sha256: cd7b769db11a2b5243b037c8a9b1ecaef02e1ae27a2d909ffa78c1dad747bb10
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.4"
-  irondash_message_channel:
-    dependency: transitive
-    description:
-      name: irondash_message_channel
-      sha256: b4101669776509c76133b8917ab8cfc704d3ad92a8c450b92934dd8884a2f060
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.0"
   jose:
     dependency: transitive
     description:
@@ -1927,14 +1838,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.1"
-  launch_at_startup:
-    dependency: "direct main"
-    description:
-      name: launch_at_startup
-      sha256: "1f8a75520913d1038630049e6c44a2575a23ffd28cc8b14fdf37401d1d21de84"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -2015,15 +1918,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.11"
-  local_notifier:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "7526556fe2beb5c61ddede34e1992726907cd7ae"
-      resolved-ref: "7526556fe2beb5c61ddede34e1992726907cd7ae"
-      url: "https://github.com/BlueBubblesApp/local_notifier.git"
-    source: git
-    version: "0.1.6"
   logger:
     dependency: "direct main"
     description:
@@ -2040,14 +1934,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  macos_window_utils:
-    dependency: transitive
-    description:
-      name: macos_window_utils
-      sha256: "3534f2af024f2f24112ca28789a44e6750083f8c0065414546c6593ee48a5009"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.6.1"
   macros:
     dependency: transitive
     description:
@@ -2105,22 +1991,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.6"
-  media_kit_libs_linux:
-    dependency: "direct main"
-    description:
-      name: media_kit_libs_linux
-      sha256: e186891c31daa6bedab4d74dcdb4e8adfccc7d786bfed6ad81fe24a3b3010310
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.3"
-  media_kit_libs_windows_video:
-    dependency: "direct main"
-    description:
-      name: media_kit_libs_windows_video
-      sha256: "32654572167825c42c55466f5d08eee23ea11061c84aa91b09d0e0f69bdd0887"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.10"
   media_kit_native_event_loop:
     dependency: "direct main"
     description:
@@ -2137,14 +2007,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.5"
-  menu_base:
-    dependency: transitive
-    description:
-      name: menu_base
-      sha256: "820368014a171bd1241030278e6c2617354f492f5c703d7b7d4570a6b8b84405"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
   meta:
     dependency: transitive
     description:
@@ -2201,14 +2063,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.2.3"
-  msix:
-    dependency: "direct main"
-    description:
-      name: msix
-      sha256: c50d6bd1aafe0d071a3c1e5a5ccb056404502935cb0a549e3178c4aae16caf33
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.16.8"
   multi_value_listenable_builder:
     dependency: "direct main"
     description:
@@ -2305,14 +2159,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.3"
-  on_exit:
-    dependency: "direct main"
-    description:
-      name: on_exit
-      sha256: "5a4c625374ddc9146b5dc6617e5c9885e326d0e876cf6554875f9961f564bd96"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   open_filex:
     dependency: "direct main"
     description:
@@ -2506,7 +2352,7 @@ packages:
     source: hosted
     version: "0.1.3+2"
   permission_handler_platform_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: permission_handler_platform_interface
       sha256: e9c8eadee926c4532d0305dff94b85bf961f16759c3af791486613152af4b4f9
@@ -2514,14 +2360,13 @@ packages:
     source: hosted
     version: "4.2.3"
   permission_handler_windows:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: permission_handler_windows
-      ref: "7912a76a3208e876c2275e1a87003ede3903abc8"
-      resolved-ref: "7912a76a3208e876c2275e1a87003ede3903abc8"
-      url: "https://github.com/BlueBubblesApp/flutter-permission-handler.git"
-    source: git
-    version: "0.2.1"
+      name: permission_handler_windows
+      sha256: caeae01858a0a7d2df67a445ac98e1ad95e55a0e77c73044f4e9b1c8c2289cbd
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   petitparser:
     dependency: transitive
     description:
@@ -2546,14 +2391,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.15.0"
-  pixel_snap:
-    dependency: transitive
-    description:
-      name: pixel_snap
-      sha256: "677410ea37b07cd37ecb6d5e6c0d8d7615a7cf3bd92ba406fd1ac57e937d1fb0"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.5"
   platform:
     dependency: transitive
     description:
@@ -2833,14 +2670,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.3"
-  screen_retriever:
-    dependency: "direct main"
-    description:
-      name: screen_retriever
-      sha256: "6ee02c8a1158e6dae7ca430da79436e3b1c9563c8cf02f524af997c201ac2b90"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.9"
   scroll_to_index:
     dependency: "direct main"
     description:
@@ -2986,14 +2815,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  shortid:
-    dependency: transitive
-    description:
-      name: shortid
-      sha256: d0b40e3dbb50497dad107e19c54ca7de0d1a274eb9b4404991e443dadb9ebedb
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
   simple_animations:
     dependency: "direct main"
     description:
@@ -3160,30 +2981,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
-  super_clipboard:
-    dependency: transitive
-    description:
-      name: super_clipboard
-      sha256: "4a6ae6dfaa282ec1f2bff750976f535517ed8ca842d5deae13985eb11c00ac1f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.24"
-  super_drag_and_drop:
-    dependency: "direct main"
-    description:
-      name: super_drag_and_drop
-      sha256: e1ea1528916a728b3d0c3007c0af1303947026011f78564279af68d8856a0205
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.24"
-  super_native_extensions:
-    dependency: transitive
-    description:
-      name: super_native_extensions
-      sha256: a433bba8186cd6b707560c42535bf284804665231c00bca86faf1aa4968b7637
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.24"
   supercharged:
     dependency: "direct main"
     description:
@@ -3216,14 +3013,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
-  system_tray:
-    dependency: "direct main"
-    description:
-      name: system_tray
-      sha256: "40444e5de8ed907822a98694fd031b8accc3cb3c0baa547634ce76189cf3d9cf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.3"
   telephony_plus:
     dependency: "direct main"
     description:
@@ -3287,22 +3076,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
-  tray_manager:
-    dependency: "direct main"
-    description:
-      name: tray_manager
-      sha256: bdc3ac6c36f3d12d871459e4a9822705ce5a1165a17fa837103bc842719bf3f7
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4"
-  try_catch:
-    dependency: transitive
-    description:
-      name: try_catch
-      sha256: "3e0f62abdd51ea40f59c0e5958cfac7d6b92faec5a9faf85f174c6cc34c018af"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2"
   tuple:
     dependency: "direct main"
     description:
@@ -3625,7 +3398,7 @@ packages:
     source: hosted
     version: "1.2.1"
   win32:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: win32
       sha256: "84ba388638ed7a8cb3445a320c8273136ab2631cd5f2c57888335504ddab1bc2"
@@ -3640,22 +3413,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.5"
-  window_manager:
-    dependency: "direct main"
-    description:
-      name: window_manager
-      sha256: ab8b2a7f97543d3db2b506c9d875e637149d48ee0c6a5cb5f5fd6e0dac463792
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.2"
-  windows_taskbar:
-    dependency: "direct main"
-    description:
-      name: windows_taskbar
-      sha256: "204edfdb280a7053febdf50fc9b49b3c007255bd8a83c082d10c174ec6548f33"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.2"
   wkt_parser:
     dependency: transitive
     description:

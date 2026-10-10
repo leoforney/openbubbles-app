@@ -6,8 +6,15 @@ data class Attachment(
     val path: String
 )
 
+data class Reaction(
+    val type: String,
+    val isIncoming: Boolean,
+    val senderName: String?
+)
+
 data class Message(
     val id: Long,
+    val guid: String,
     val text: String,
     val isIncoming: Boolean,
     val date: Long,
@@ -15,5 +22,6 @@ data class Message(
     val dateRead: Long,
     val isError: Boolean,
     val senderName: String?,
-    val attachments: List<Attachment>
+    val attachments: List<Attachment>,
+    val reactions: List<Reaction>
 )

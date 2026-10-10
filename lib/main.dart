@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:isolate';
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:bluebubbles/app/components/custom/custom_error_box.dart';
 import 'package:bluebubbles/helpers/backend/startup_tasks.dart';
 import 'package:bluebubbles/helpers/helpers.dart';
 import 'package:bluebubbles/services/network/http_overrides.dart';
 import 'package:bluebubbles/utils/logger/logger.dart';
-import 'package:bluebubbles/services/network/backend_service.dart';
-import 'package:bluebubbles/utils/window_effects.dart';
 import 'package:bluebubbles/app/layouts/conversation_list/pages/conversation_list.dart';
 import 'package:bluebubbles/app/layouts/startup/failure_to_start.dart';
 import 'package:bluebubbles/app/layouts/setup/setup_view.dart';
@@ -20,41 +16,28 @@ import 'package:bluebubbles/app/wrappers/titlebar_wrapper.dart';
 import 'package:bluebubbles/app/wrappers/stateful_boilerplate.dart';
 import 'package:bluebubbles/database/models.dart';
 import 'package:bluebubbles/services/services.dart';
-import 'package:collection/collection.dart';
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' hide Priority;
 import 'package:flutter/services.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:get/get.dart';
 import 'package:google_ml_kit/google_ml_kit.dart' hide Message;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:local_notifier/local_notifier.dart';
-import 'package:path/path.dart' show join;
-import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:secure_application/secure_application.dart';
-import 'package:system_tray/system_tray.dart' as st;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:tray_manager/tray_manager.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:universal_io/io.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:dpad/dpad.dart';
 import 'package:path_provider/path_provider.dart';
 
 var usingRustPush = true;
 bool isAuthing = false;
-final systemTray = st.SystemTray();
 
 @pragma('vm:entry-point')
 //ignore: prefer_void_to_null
@@ -135,56 +118,6 @@ Future<Null> initApp(bool bubble, List<String> arguments) async {
           }
         }
 
-        /* ----- DESKTOP SPECIFIC INITIALIZATION ----- */
-        if (kIsDesktop) {
-          /* ----- WINDOW INITIALIZATION ----- */
-          await windowManager.ensureInitialized();
-          await windowManager.setPreventClose(ss.settings.closeToTray.value);
-          await windowManager.setTitle('OpenBubbles');
-          await Window.initialize();
-          if (Platform.isWindows) {
-            await Window.hideWindowControls();
-          } else if (Platform.isLinux) {
-            await windowManager
-                .setTitleBarStyle(ss.settings.useCustomTitleBar.value ? TitleBarStyle.hidden : TitleBarStyle.normal);
-          }
-          windowManager.addListener(DesktopWindowListener.instance);
-          doWhenWindowReady(() async {
-            await windowManager.setMinimumSize(const Size(300, 300));
-            Display primary = await ScreenRetriever.instance.getPrimaryDisplay();
-
-            Size size = await windowManager.getSize();
-            double width = ss.prefs.getDouble("window-width") ?? size.width;
-            double height = ss.prefs.getDouble("window-height") ?? size.height;
-
-            width = width.clamp(300, max(300, primary.size.width));
-            height = height.clamp(300, max(300, primary.size.height));
-            await windowManager.setSize(Size(width, height));
-            await ss.prefs.setDouble("window-width", width);
-            await ss.prefs.setDouble("window-height", height);
-
-            await windowManager.setAlignment(Alignment.center);
-            Offset offset = await windowManager.getPosition();
-            double? posX = ss.prefs.getDouble("window-x") ?? offset.dx;
-            double? posY = ss.prefs.getDouble("window-y") ?? offset.dy;
-
-            posX = posX.clamp(0, max(0, primary.size.width - width));
-            posY = posY.clamp(0, max(0, primary.size.height - height));
-            await windowManager.setPosition(Offset(posX, posY), animate: true);
-            await ss.prefs.setDouble("window-x", posX);
-            await ss.prefs.setDouble("window-y", posY);
-
-            await windowManager.setTitle('OpenBubbles');
-            if (arguments.firstOrNull != "minimized") {
-              await windowManager.show();
-            }
-            if (!(ss.canAuthenticate && ss.settings.shouldSecure.value)) {
-              chats.init();
-              socket;
-            }
-          });
-
-        }
         await dotenv.load(fileName: '.env', isOptional: true);
 
         /* ----- EMOJI FONT INITIALIZATION ----- */
@@ -220,55 +153,6 @@ Future<Null> initApp(bool bubble, List<String> arguments) async {
       Logger.error("Unhandled Exception", trace: stackTrace, error: error);
     }
   );
-}
-
-class DesktopWindowListener extends WindowListener {
-  DesktopWindowListener._();
-
-  static final DesktopWindowListener instance = DesktopWindowListener._();
-
-  @override
-  void onWindowFocus() {
-    ls.open();
-  }
-
-  @override
-  void onWindowBlur() {
-    ls.close();
-  }
-
-  @override
-  void onWindowResized() async {
-    Size size = await windowManager.getSize();
-    await ss.prefs.setDouble("window-width", size.width);
-    await ss.prefs.setDouble("window-height", size.height);
-  }
-
-  @override
-  void onWindowMoved() async {
-    Offset offset = await windowManager.getPosition();
-    await ss.prefs.setDouble("window-x", offset.dx);
-    await ss.prefs.setDouble("window-y", offset.dy);
-  }
-
-  @override
-  void onWindowEvent(String eventName) async {
-    switch (eventName) {
-      case "hide":
-        await setSystemTrayContextMenu(windowHidden: true);
-        break;
-      case "show":
-        await setSystemTrayContextMenu(windowHidden: false);
-        break;
-    }
-  }
-
-  @override
-  void onWindowClose() async {
-    if (await windowManager.isPreventClose()) {
-      await windowManager.hide();
-    }
-  }
 }
 
 class Main extends StatelessWidget {
@@ -438,7 +322,7 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends OptimizedState<Home> with WidgetsBindingObserver, TrayListener {
+class _HomeState extends OptimizedState<Home> with WidgetsBindingObserver {
   final ReceivePort port = ReceivePort();
   bool serverCompatible = true;
   bool fullyLoaded = false;
@@ -487,55 +371,6 @@ class _HomeState extends OptimizedState<Home> with WidgetsBindingObserver, TrayL
         });
       }
 
-      if (kIsDesktop) {
-        if (Platform.isWindows) {
-          /* ----- CONTACT IMAGE CACHE DELETION ----- */
-          Directory temp = Directory(join(fs.appDocDir.path, "temp"));
-          if (await temp.exists()) await temp.delete(recursive: true);
-
-          /* ----- BADGE ICON LISTENER ----- */
-          GlobalChatService.unreadCount.listen((count) async {
-            if (count == 0) {
-                await WindowsTaskbar.resetOverlayIcon();
-              } else if (count <= 9) {
-                await WindowsTaskbar.setOverlayIcon(ThumbnailToolbarAssetIcon('assets/badges/badge-$count.ico'));
-              } else {
-                await WindowsTaskbar.setOverlayIcon(ThumbnailToolbarAssetIcon('assets/badges/badge-10.ico'));
-              }
-          });
-
-          /* ----- WINDOW EFFECT INITIALIZATION ----- */
-          eventDispatcher.stream.listen((event) async {
-            if (event.item1 == 'theme-update') {
-              EasyDebounce.debounce('window-effect', const Duration(milliseconds: 500), () async {
-                if (mounted) {
-                  await WindowEffects.setEffect(color: context.theme.colorScheme.background);
-                }
-              });
-            }
-          });
-
-          Future(() => eventDispatcher.emit("theme-update", null));
-        }
-
-        /* ----- SYSTEM TRAY INITIALIZATION ----- */
-        await initSystemTray();
-        if (Platform.isWindows) {
-          systemTray.registerSystemTrayEventHandler((eventName) {
-            if (eventName == st.kSystemTrayEventClick) {
-              onTrayIconMouseDown();
-            } else if (eventName == st.kSystemTrayEventRightClick) {
-              onTrayIconRightMouseDown();
-            }
-          });
-        } else {
-          trayManager.addListener(this);
-        }
-
-        /* ----- NOTIFICATIONS INITIALIZATION ----- */
-        await localNotifier.setup(appName: "BlueBubbles");
-      }
-
       if (!ss.settings.finishedSetup.value) {
         setState(() {
           fullyLoaded = true;
@@ -547,45 +382,9 @@ class _HomeState extends OptimizedState<Home> with WidgetsBindingObserver, TrayL
   }
 
   @override
-  void onTrayIconMouseDown() async {
-    await windowManager.show();
-  }
-
-  @override
-  void onTrayIconRightMouseDown() async {
-    if (Platform.isWindows) {
-      await systemTray.popUpContextMenu();
-    } else {
-      await trayManager.popUpContextMenu();
-    }
-  }
-
-  @override
-  void onTrayMenuItemClick(MenuItem menuItem) async {
-    switch (menuItem.key) {
-      case 'show_app':
-        await windowManager.show();
-        break;
-      case 'hide_app':
-        await windowManager.hide();
-        break;
-      case 'close_app':
-        if (await windowManager.isPreventClose()) {
-          await windowManager.setPreventClose(false);
-        }
-        await windowManager.close();
-        break;
-    }
-  }
-
-  @override
   void dispose() {
     // Clean up observer when app is fully closed
     WidgetsBinding.instance.removeObserver(this);
-    windowManager.removeListener(DesktopWindowListener.instance);
-    if (Platform.isLinux) {
-      trayManager.removeListener(this);
-    }
     super.dispose();
   }
 
@@ -665,62 +464,3 @@ class _HomeState extends OptimizedState<Home> with WidgetsBindingObserver, TrayL
   }
 }
 
-Future<void> initSystemTray() async {
-  if (Platform.isWindows) {
-    await systemTray.initSystemTray(
-      iconPath: 'assets/icon/icon.ico',
-      toolTip: "OpenBubbles",
-    );
-  } else {
-    String path;
-    if (isFlatpak) {
-      path = 'app.bluebubbles.BlueBubbles';
-    } else if (isSnap) {
-      path = p.joinAll([p.dirname(Platform.resolvedExecutable), 'data/flutter_assets/assets/icon', 'icon.png']);
-    } else {
-      path = 'assets/icon/icon.png';
-    }
-
-    await trayManager.setIcon(path);
-  }
-
-  await setSystemTrayContextMenu(windowHidden: !appWindow.isVisible);
-}
-
-Future<void> setSystemTrayContextMenu({bool windowHidden = false}) async {
-  if (Platform.isWindows) {
-    st.Menu menu = st.Menu();
-    menu.buildFrom([
-      st.MenuItemLabel(
-        label: windowHidden ? 'Show App' : 'Hide App',
-        onClicked: (st.MenuItemBase menuItem) async {
-          if (windowHidden) {
-            await windowManager.show();
-          } else {
-            await windowManager.hide();
-          }
-        },
-      ),
-      st.MenuSeparator(),
-      st.MenuItemLabel(
-        label: 'Close App',
-        onClicked: (_) async {
-          if (await windowManager.isPreventClose()) {
-            await windowManager.setPreventClose(false);
-          }
-          await windowManager.close();
-        },
-      ),
-    ]);
-
-    await systemTray.setContextMenu(menu);
-  } else {
-    await trayManager.setContextMenu(Menu(
-      items: [
-        MenuItem(label: windowHidden ? 'Show App' : 'Hide App', key: windowHidden ? 'show_app' : 'hide_app'),
-        MenuItem.separator(),
-        MenuItem(label: 'Close App', key: 'close_app'),
-      ],
-    ));
-  }
-}

@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -41,35 +42,14 @@ fun ChatListScreen(onChatSelected: (Chat) -> Unit) {
     var selectedProfile by remember { mutableStateOf<Chat?>(null) }
 
     LaunchedEffect(Unit) {
-        MethodCallHandler.invokeMethodCb("getChats", mapOf(), object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                val list = result as? List<Map<String, Any>> ?: emptyList()
-                val parsedChats = list.map {
-                    val participantInfoList = (it["participantInfo"] as? List<Map<String, Any>>)?.map { p ->
-                        ParticipantInfo(
-                            address = p["address"] as? String ?: "",
-                            name = p["name"] as? String ?: "",
-                            avatarBytes = p["avatarBytes"] as? ByteArray
-                        )
-                    } ?: emptyList()
-
-                    Chat(
-                        id = (it["id"] as? Number)?.toLong() ?: 0L,
-                        name = (it["name"] as? String) ?: "Unknown",
-                        avatarPath = it["avatarPath"] as? String,
-                        avatarBytes = it["avatarBytes"] as? ByteArray,
-                        date = (it["date"] as? Number)?.toLong() ?: 0L,
-                        lastMessage = (it["lastMessage"] as? String) ?: "",
-                        isGroup = (it["isGroup"] as? Boolean) ?: false,
-                        participantInfo = participantInfoList
-                    )
-                }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val parsedChats = com.bluebubbles.messaging.objectbox.ChatRepository.getChats()
                 chats = parsedChats
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
-            override fun notImplemented() {}
-        })
+        }
     }
 
     Scaffold(
@@ -140,17 +120,18 @@ fun ProfileDialog(chat: Chat, onDismiss: () -> Unit) {
                 ) {
                     Button(onClick = { 
                         val address = chat.participantInfo.firstOrNull()?.address ?: ""
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:\$address"))
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$address"))
                         context.startActivity(intent)
                     }) {
                         Text("Call")
                     }
                     OutlinedButton(onClick = { 
                         val address = chat.participantInfo.firstOrNull()?.address ?: ""
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("smsto:\$address"))
+                        val intent = Intent(android.provider.ContactsContract.Intents.SHOW_OR_CREATE_CONTACT, Uri.parse("tel:$address"))
+                        intent.putExtra(android.provider.ContactsContract.Intents.EXTRA_FORCE_CREATE, false)
                         context.startActivity(intent)
                     }) {
-                        Text("Message")
+                        Text("Info")
                     }
                 }
             }
@@ -179,15 +160,14 @@ fun AvatarView(avatarPath: String?, avatarBytes: ByteArray?, isGroup: Boolean, s
         } else {
             DefaultAvatar(isGroup, modifier)
         }
-    } else if (avatarPath != null) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(File(avatarPath))
-                .crossfade(true)
-                .build(),
+    } else if (avatarPath != null && fileExists(avatarPath)) {
+        LocalImage(
+            path = avatarPath,
             contentDescription = "Avatar",
             modifier = modifier,
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            maxDim = 256,
+            placeholder = { DefaultAvatar(isGroup, modifier) }
         )
     } else {
         DefaultAvatar(isGroup, modifier)
@@ -221,6 +201,10 @@ fun ChatListItem(chat: Chat, onClick: () -> Unit, onProfileClick: () -> Unit) {
         dateFormat.format(dateObj)
     }
 
+    val unread = chat.unreadCount > 0
+    val emphasis = if (unread) FontWeight.Bold else FontWeight.Normal
+    val preview = chat.lastMessage
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -235,9 +219,9 @@ fun ChatListItem(chat: Chat, onClick: () -> Unit, onProfileClick: () -> Unit) {
                 isGroup = chat.isGroup
             )
         }
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -247,6 +231,8 @@ fun ChatListItem(chat: Chat, onClick: () -> Unit, onProfileClick: () -> Unit) {
                 Text(
                     text = chat.name,
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = emphasis,
+                    color = if (unread) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -256,19 +242,60 @@ fun ChatListItem(chat: Chat, onClick: () -> Unit, onProfileClick: () -> Unit) {
                     Text(
                         text = dateString,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = emphasis,
+                        color = if (unread) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            if (chat.lastMessage.isNotEmpty()) {
+            if (preview.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = chat.lastMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = preview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = emphasis,
+                        color = if (unread) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (unread) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
+            } else if (unread) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        Text(
+                            text = if (chat.unreadCount > 99) "99+" else chat.unreadCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                        )
+                    }
+                }
             }
         }
     }

@@ -4,8 +4,6 @@ use std::{borrow::{Borrow, BorrowMut}, collections::HashSet, fs::{self, File}, f
 pub use std::time::SystemTime;
 use anyhow::anyhow;
 use flutter_rust_bridge::{DartFnFuture, IntoDart, JoinHandle, frb};
-#[cfg(not(target_os = "android"))]
-use keystore::software::{SoftwareEncryptor, SoftwareKeystore};
 use keystore::{AesKeystoreKey, EcCurve, EcKeystoreKey, EncryptMode, KeystoreAccessRules, KeystoreDigest, KeystoreEncryptKey, KeystorePadding, RsaKey, init_keystore, keystore};
 pub use rustpush::{default_provider, ArcAnisetteClient, LoginClientInfo, DefaultAnisetteProvider};
 use log::{debug, error, info, warn};
@@ -139,10 +137,6 @@ where
     Ok(s.into())
 }
 
-#[cfg(not(target_os = "android"))]
-pub type MyFilePackager = FFMpegFilePackager;
-
-#[cfg(target_os = "android")]
 pub type MyFilePackager = FFIFilePackager;
 
 #[derive(Default)]
@@ -564,16 +558,6 @@ impl SharedPushState {
     pub async fn restore(path: String) -> Option<(Self, APSWatcher)> {
         info!("restroing");
         let dir = PathBuf::from_str(&path).unwrap();
-        let keystore = dir.join("keystore.plist");
-
-        #[cfg(not(target_os = "android"))]
-        init_keystore(SoftwareKeystore {
-            state: plist::from_file(&keystore).unwrap_or_default(),
-            update_state: Box::new(move |state| {
-                plist::to_file_xml(&keystore, state).unwrap();
-            }),
-            encryptor: SoftwareEncryptor(*b"desktopisinsecureyoushouldn'tber"),
-        });
 
         if let Err(err) = panic::catch_unwind(|| {
             migrate(path.clone());

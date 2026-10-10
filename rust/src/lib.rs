@@ -21,18 +21,9 @@ pub mod bbhwinfo {
 }
 
 pub fn init_logger(path: &Path) {
-    #[cfg(target_os = "android")]
     let system = android_logger::AndroidLogger::new(
         android_logger::Config::default().with_max_level(log::LevelFilter::Debug),
     );
-    #[cfg(not(target_os = "android"))]
-    let system = {
-        if let Err(_) = std::env::var("RUST_LOG") {
-            std::env::set_var("RUST_LOG", "debug");
-        }
-        pretty_env_logger::formatted_builder()
-            .build()
-    };
 
     println!("here??");
     

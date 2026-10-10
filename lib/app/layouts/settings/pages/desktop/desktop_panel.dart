@@ -12,7 +12,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:reorderables/reorderables.dart';
-import 'package:window_manager/window_manager.dart';
 
 class DesktopPanel extends StatefulWidget {
 

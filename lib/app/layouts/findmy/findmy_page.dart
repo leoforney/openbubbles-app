@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:bluebubbles/app/components/avatars/contact_avatar_widget.dart';
 import 'package:bluebubbles/app/layouts/findmy/findmy_location_clipper.dart';
 import 'package:bluebubbles/app/layouts/findmy/findmy_pin_clipper.dart';
@@ -1201,7 +1200,7 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
                       buildMap(),
                       if (!samsung && canRefresh)
                         Positioned(
-                          top: 10 + (kIsDesktop ? appWindow.titleBarHeight : MediaQuery.of(context).padding.top),
+                          top: 10 + MediaQuery.of(context).padding.top,
                           right: 20,
                           child: Container(
                             width: 48,
@@ -1227,24 +1226,6 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
                                       },
                                     ),
                             ),
-                          ),
-                        ),
-                      if (kIsDesktop)
-                        SizedBox(
-                          height: appWindow.titleBarHeight,
-                          child: AbsorbPointer(
-                            child: Row(children: [
-                              Expanded(child: Container()),
-                              ClipRect(
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaY: 2, sigmaX: 2),
-                                  child: Container(
-                                      height: appWindow.titleBarHeight,
-                                      width: appWindow.titleBarButtonSize.width * 3,
-                                      color: context.theme.colorScheme.properSurface.withOpacity(0.5)),
-                                ),
-                              ),
-                            ]),
                           ),
                         ),
                     ],
@@ -1543,7 +1524,7 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
             ),
             if (!samsung)
               Positioned(
-                  top: 10 + (kIsDesktop ? appWindow.titleBarHeight : MediaQuery.of(context).padding.top),
+                  top: 10 + MediaQuery.of(context).padding.top,
                   left: 20,
                   child: Container(
                     width: 48,
@@ -1556,7 +1537,7 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
                   )),
             if (!samsung && canRefresh)
               Positioned(
-                top: 10 + (kIsDesktop ? appWindow.titleBarHeight : MediaQuery.of(context).padding.top),
+                top: 10 + MediaQuery.of(context).padding.top,
                 right: 20,
                 child: Container(
                   width: 48,
@@ -1582,24 +1563,6 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
                             },
                           ),
                   ),
-                ),
-              ),
-            if (kIsDesktop)
-              SizedBox(
-                height: appWindow.titleBarHeight,
-                child: AbsorbPointer(
-                  child: Row(children: [
-                    Expanded(child: Container()),
-                    ClipRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaY: 2, sigmaX: 2),
-                        child: Container(
-                            height: appWindow.titleBarHeight,
-                            width: appWindow.titleBarButtonSize.width * 3,
-                            color: context.theme.colorScheme.properSurface.withOpacity(0.5)),
-                      ),
-                    ),
-                  ]),
                 ),
               ),
           ],

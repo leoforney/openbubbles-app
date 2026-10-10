@@ -26,7 +26,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_ml_kit/google_ml_kit.dart' hide Message;
 import 'package:scroll_to_index/scroll_to_index.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:bluebubbles/src/rust/api/api.dart' as api;
 
 class MessagesView extends StatefulWidget {
@@ -425,46 +424,7 @@ class MessagesViewState extends OptimizedState<MessagesView> {
   @override
   Widget build(BuildContext context) {
     const moonIcon = CupertinoIcons.moon_fill;
-    return DropRegion(
-      hitTestBehavior: HitTestBehavior.translucent,
-      formats: Formats.standardFormats,
-      onDropOver: (DropOverEvent event) {
-        if (!event.session.allowedOperations.contains(DropOperation.copy)) {
-          dragging.value = false;
-          return DropOperation.forbidden;
-        }
-        numFiles.value = event.session.items.where((item) => Formats.standardFormats.whereType<FileFormat>().any((f) => item.canProvide(f))).length;
-        if (numFiles.value > 0) {
-          dragging.value = true;
-          return DropOperation.copy;
-        }
-
-        dragging.value = false;
-        return DropOperation.forbidden;
-      },
-      onDropLeave: (_) {
-        dragging.value = false;
-      },
-      onPerformDrop: (PerformDropEvent event) async {
-        for (DropItem item in event.session.items) {
-          final reader = item.dataReader!;
-          FileFormat? format = reader.getFormats(Formats.standardFormats).whereType<FileFormat>().firstOrNull;
-
-          if (format == null) return;
-
-          reader.getFile(format, (file) async {
-            Uint8List bytes = await file.readAll();
-            controller.pickedAttachments.add(PlatformFile(
-              path: file.fileName!,
-              name: file.fileName!,
-              size: file.fileSize!,
-              bytes: bytes,
-            ));
-          });
-        }
-        dragging.value = false;
-      },
-      child: GestureDetector(
+    return GestureDetector(
           behavior: HitTestBehavior.deferToChild,
           onHorizontalDragUpdate: (details) {
             if (ss.settings.skin.value != Skins.Samsung && !kIsWeb && !kIsDesktop) {
@@ -852,8 +812,7 @@ class MessagesViewState extends OptimizedState<MessagesView> {
                 ),
               ),
             ],
-          )),
-    );
+          ));
   }
 }
 

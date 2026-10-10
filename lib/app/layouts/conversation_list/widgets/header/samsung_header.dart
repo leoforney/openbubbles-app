@@ -5,7 +5,7 @@ import 'package:bluebubbles/app/layouts/conversation_list/pages/search/search_vi
 import 'package:bluebubbles/app/wrappers/stateful_boilerplate.dart';
 import 'package:bluebubbles/services/services.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:bluebubbles/utils/window_effects.dart';
 import 'package:get/get.dart';
 
 class SamsungHeader extends CustomStateful<ConversationListController> {

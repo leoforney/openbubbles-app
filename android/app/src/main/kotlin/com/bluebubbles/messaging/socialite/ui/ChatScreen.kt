@@ -1,10 +1,28 @@
 package com.bluebubbles.messaging.socialite.ui
 
+
+
+import net.engawapg.lib.zoomable.rememberZoomState
+import net.engawapg.lib.zoomable.zoomable
+import androidx.activity.compose.BackHandler
+
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.interaction.MutableInteractionSource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +56,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,55 +71,40 @@ fun ChatScreen(
     var messages by remember { mutableStateOf<List<Message>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var hasMore by remember { mutableStateOf(true) }
+    var viewingAttachment by remember { mutableStateOf<Attachment?>(null) }
 
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    val allMediaAttachments = remember(messages) {
+        messages.flatMap { it.attachments }.filter { 
+            (it.mimeType?.startsWith("image/") == true) || (it.mimeType?.startsWith("video/") == true)
+        }.reversed()
+    }
 
     fun loadMessages(offset: Int = 0) {
         if (isLoading || !hasMore) return
         isLoading = true
-        MethodCallHandler.invokeMethodCb("getMessages", mapOf("chatId" to chat.id, "offset" to offset, "limit" to 50), object : MethodChannel.Result {
-            override fun success(result: Any?) {
-                val list = result as? List<Map<String, Any>> ?: emptyList()
-                if (list.isEmpty()) {
-                    hasMore = false
-                } else {
-                    val parsedMessages = list.map {
-                        val attachmentsList = (it["attachments"] as? List<Map<String, Any>>)?.map { a ->
-                            Attachment(
-                                guid = a["guid"] as? String ?: "",
-                                mimeType = a["mimeType"] as? String,
-                                path = a["path"] as? String ?: ""
-                            )
-                        } ?: emptyList()
-
-                        Message(
-                            id = (it["id"] as? Number)?.toLong() ?: 0L,
-                            text = (it["text"] as? String) ?: "",
-                            isIncoming = (it["isIncoming"] as? Boolean) ?: true,
-                            date = (it["date"] as? Number)?.toLong() ?: 0L,
-                            dateDelivered = (it["dateDelivered"] as? Number)?.toLong() ?: 0L,
-                            dateRead = (it["dateRead"] as? Number)?.toLong() ?: 0L,
-                            isError = (it["isError"] as? Boolean) ?: false,
-                            senderName = it["senderName"] as? String,
-                            attachments = attachmentsList
-                        )
-                    }
-                    if (offset == 0) {
-                        messages = parsedMessages
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val parsedMessages = com.bluebubbles.messaging.objectbox.ChatRepository.getMessages(chat.id, 50L, offset.toLong())
+                withContext(Dispatchers.Main) {
+                    if (parsedMessages.isEmpty()) {
+                        hasMore = false
                     } else {
-                        messages = messages + parsedMessages
+                        if (offset == 0) {
+                            messages = parsedMessages
+                        } else {
+                            messages = messages + parsedMessages
+                        }
                     }
+                    isLoading = false
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
                 isLoading = false
             }
-
-            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                isLoading = false
-            }
-            override fun notImplemented() {
-                isLoading = false
-            }
-        })
+        }
     }
 
     LaunchedEffect(chat.id) {
@@ -170,33 +177,42 @@ fun ChatScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            reverseLayout = true,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages.size) { index ->
-                val message = messages[index]
-                val isLastByMe = !message.isIncoming && (index == 0 || messages[index - 1].isIncoming)
-                MessageRow(message = message, isGroup = chat.isGroup, isLastByMe = isLastByMe)
-            }
-            if (isLoading && messages.isNotEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.padding(16.dp).size(24.dp))
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                reverseLayout = true,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                itemsIndexed(items = messages, key = { _, message -> message.id }) { index, message ->
+                    val isLastByMe = !message.isIncoming && (index == 0 || messages.getOrNull(index - 1)?.isIncoming == true)
+                    MessageRow(message = message, isGroup = chat.isGroup, isLastByMe = isLastByMe, onAttachmentClick = { viewingAttachment = it })
+                }
+                if (isLoading && messages.isNotEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.padding(16.dp).size(24.dp))
+                        }
                     }
                 }
+            }
+            
+            if (viewingAttachment != null) {
+                FullscreenAttachmentViewer(
+                    initialAttachment = viewingAttachment!!,
+                    allAttachments = allMediaAttachments,
+                    onDismiss = { viewingAttachment = null }
+                )
             }
         }
     }
 }
 
 @Composable
-fun MessageRow(message: Message, isGroup: Boolean, isLastByMe: Boolean) {
+fun MessageRow(message: Message, isGroup: Boolean, isLastByMe: Boolean, onAttachmentClick: (Attachment) -> Unit) {
     var offsetX by remember { mutableStateOf(0f) }
     val maxSwipe = with(LocalDensity.current) { -80.dp.toPx() } // -80dp to the left
 
@@ -232,7 +248,7 @@ fun MessageRow(message: Message, isGroup: Boolean, isLastByMe: Boolean) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = if (message.isIncoming) Alignment.Start else Alignment.End
             ) {
-                MessageBubble(message = message, isGroup = isGroup)
+                MessageBubble(message = message, isGroup = isGroup, onAttachmentClick = onAttachmentClick)
                 
                 // Read / Delivered Receipts for outgoing messages
                 if (!message.isIncoming && isLastByMe) {
@@ -256,7 +272,20 @@ fun MessageRow(message: Message, isGroup: Boolean, isLastByMe: Boolean) {
 }
 
 @Composable
-fun MessageBubble(message: Message, isGroup: Boolean) {
+fun getReactionEmoji(type: String): String {
+    return when (type) {
+        "love" -> "❤️"
+        "like" -> "👍"
+        "dislike" -> "👎"
+        "laugh" -> "😂"
+        "emphasize" -> "‼️"
+        "question" -> "❓"
+        else -> type
+    }
+}
+
+@Composable
+fun MessageBubble(message: Message, isGroup: Boolean, onAttachmentClick: (Attachment) -> Unit) {
     val isIncoming = message.isIncoming
     Column(
         horizontalAlignment = if (isIncoming) Alignment.Start else Alignment.End
@@ -270,75 +299,94 @@ fun MessageBubble(message: Message, isGroup: Boolean) {
             )
         }
 
-        Box(
-            modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 24.dp,
-                        topEnd = 24.dp,
-                        bottomStart = if (isIncoming) 4.dp else 24.dp,
-                        bottomEnd = if (isIncoming) 24.dp else 4.dp
+        Box {
+            Box(
+                modifier = Modifier
+                    .padding(top = if (message.reactions.isNotEmpty()) 16.dp else 0.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 24.dp,
+                            topEnd = 24.dp,
+                            bottomStart = if (isIncoming) 4.dp else 24.dp,
+                            bottomEnd = if (isIncoming) 24.dp else 4.dp
+                        )
                     )
-                )
-                .background(if (isIncoming) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
-                .padding(if (message.attachments.isNotEmpty() && message.text.isEmpty()) 0.dp else 12.dp)
-                .widthIn(max = 280.dp)
-        ) {
-            Column {
-                if (message.attachments.isNotEmpty()) {
-                    for (attachment in message.attachments) {
-                        AttachmentView(attachment = attachment)
+                    .background(if (isIncoming) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
+                    .padding(if (message.attachments.isNotEmpty() && message.text.isEmpty()) 0.dp else 12.dp)
+                    .widthIn(max = 280.dp)
+            ) {
+                Column {
+                    if (message.attachments.isNotEmpty()) {
+                        for (attachment in message.attachments) {
+                            AttachmentView(attachment = attachment, onClick = { onAttachmentClick(attachment) })
+                        }
+                        if (message.text.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
                     }
+                    
                     if (message.text.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = message.text,
+                            color = if (isIncoming) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
-                
-                if (message.text.isNotEmpty()) {
-                    Text(
-                        text = message.text,
-                        color = if (isIncoming) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+            }
+            
+            if (message.reactions.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .align(if (isIncoming) Alignment.TopEnd else Alignment.TopStart)
+                        .offset(
+                            x = if (isIncoming) 16.dp else (-16).dp, 
+                            y = 0.dp
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    message.reactions.forEach { reaction ->
+                        Text(text = getReactionEmoji(reaction.type), fontSize = 12.sp)
+                    }
                 }
             }
         }
     }
 }
-
 @Composable
-fun AttachmentView(attachment: Attachment) {
+fun AttachmentView(attachment: Attachment, onClick: () -> Unit) {
     val mime = attachment.mimeType ?: ""
-    val file = File(attachment.path)
+    val file = java.io.File(attachment.path)
+    android.util.Log.d("AttachmentView", "Attachment path: ${attachment.path}, exists: ${file.exists()}, canRead: ${file.canRead()}, length: ${file.length()}, mime: $mime")
     
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .clip(RoundedCornerShape(16.dp))
             .background(Color.Black.copy(alpha = 0.1f)),
         contentAlignment = Alignment.Center
     ) {
         when {
             mime.startsWith("image/") -> {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(file)
-                        .crossfade(true)
-                        .build(),
+                LocalImage(
+                    path = file.absolutePath,
                     contentDescription = "Image attachment",
                     modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 300.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    placeholder = { Box(Modifier.fillMaxWidth().height(150.dp)) }
                 )
             }
             mime.startsWith("video/") -> {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp).background(Color.Black)) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(file)
-                            .crossfade(true)
-                            .build(), // Coil can extract video frames on Android
+                    LocalImage(
+                        path = file.absolutePath,
                         contentDescription = "Video thumbnail",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        isVideo = true
                     )
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -366,6 +414,73 @@ fun AttachmentView(attachment: Attachment) {
                     Icon(Icons.Default.Warning, contentDescription = "File")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("File Attachment")
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun FullscreenAttachmentViewer(
+    initialAttachment: Attachment,
+    allAttachments: List<Attachment>,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        val initialPage = remember { allAttachments.indexOfFirst { it.guid == initialAttachment.guid }.coerceAtLeast(0) }
+        val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { allAttachments.size })
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .windowInsetsPadding(WindowInsets.systemBars)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val attachment = allAttachments[page]
+                val mime = attachment.mimeType ?: ""
+                val file = java.io.File(attachment.path)
+                
+                if (mime.startsWith("image/")) {
+                    val zoomState = rememberZoomState()
+                    LocalImage(
+                        path = file.absolutePath,
+                        contentDescription = "Image attachment fullscreen",
+                        modifier = Modifier.fillMaxSize().zoomable(
+                            zoomState = zoomState,
+                            onTap = { onDismiss() }
+                        ),
+                        contentScale = ContentScale.Fit
+                    )
+                } else if (mime.startsWith("video/")) {
+                    Box(modifier = Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onDismiss() }) {
+                        LocalImage(
+                            path = file.absolutePath,
+                            contentDescription = "Video attachment fullscreen",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                            isVideo = true
+                        )
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play Video",
+                            tint = Color.White,
+                            modifier = Modifier.size(64.dp).align(Alignment.Center)
+                        )
+                    }
                 }
             }
         }

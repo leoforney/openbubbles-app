@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:bluebubbles/helpers/helpers.dart';
 import 'package:bluebubbles/database/database.dart';
 import 'package:bluebubbles/services/services.dart';
@@ -10,11 +9,8 @@ import 'package:bluebubbles/src/rust/frb_generated.dart';
 import 'package:bluebubbles/utils/logger/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:on_exit/init.dart';
 import 'package:app_install_date/app_install_date.dart';
 import 'package:path/path.dart';
-import 'package:tuple/tuple.dart';
-import 'package:window_manager/window_manager.dart';
 
 class StartupTasks {
 
@@ -131,55 +127,7 @@ class StartupTasks {
     }
   }
 
-  static Future<void> checkInstanceLock() async {
-    if (!kIsDesktop || !Platform.isLinux) return;
-    Logger.debug("Starting process with PID $pid");
-
-    final lockFile = File(join(fs.appDocDir.path, 'bluebubbles.lck'));
-    final instanceFile = File(join(fs.appDocDir.path, '.instance'));
-    onExit(() {
-      if (lockFile.existsSync()) lockFile.deleteSync();
-    });
-
-    if (!lockFile.existsSync()) {
-      lockFile.createSync();
-    }
-    if (!instanceFile.existsSync()) {
-      instanceFile.createSync();
-    }
-
-    Logger.debug("Lockfile at ${lockFile.path}");
-    String _pid = lockFile.readAsStringSync();
-    String ps = Process.runSync('ps', ['-p', _pid]).stdout;
-    if (kReleaseMode && "$pid" != _pid && ps.endsWith('bluebubbles\n')) {
-      Logger.debug("Another instance is running. Sending foreground signal");
-      instanceFile.openSync(mode: FileMode.write).closeSync();
-      exit(0);
-    }
-
-    lockFile.writeAsStringSync("$pid");
-    instanceFile.watch(events: FileSystemEvent.modify).listen((event) async {
-      Logger.debug("Got Signal to go to foreground");
-      doWhenWindowReady(() async {
-        await windowManager.show();
-        List<Tuple2<String, String>?> widAndNames = await (await Process.start('wmctrl', ['-pl']))
-            .stdout
-            .transform(utf8.decoder)
-            .transform(const LineSplitter())
-            .map((line) => line.replaceAll(RegExp(r"\s+"), " ").split(" "))
-            .map((split) => split[2] == "$pid" ? Tuple2(split.first, split.last) : null)
-            .where((tuple) => tuple != null)
-            .toList();
-
-        for (Tuple2<String, String>? window in widAndNames) {
-          if (window?.item2 == "BlueBubbles") {
-            Process.runSync('wmctrl', ['-iR', window!.item1]);
-            break;
-          }
-        }
-      });
-    });
-  }
+  static Future<void> checkInstanceLock() async {}
 }
 
 Future<void> reviewFlow() async {

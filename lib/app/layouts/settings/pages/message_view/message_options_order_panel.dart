@@ -8,7 +8,7 @@ import 'package:bluebubbles/services/ui/navigator/navigator_service.dart';
 import 'package:bluebubbles/services/ui/theme/themes_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_acrylic/window_effect.dart';
+import 'package:bluebubbles/utils/window_effects.dart';
 import 'package:get/get.dart';
 
 class MessageOptionsOrderPanel extends StatefulWidget {

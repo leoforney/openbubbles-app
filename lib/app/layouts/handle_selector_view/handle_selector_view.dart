@@ -11,7 +11,7 @@ import 'package:bluebubbles/utils/string_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_acrylic/window_effect.dart';
+import 'package:bluebubbles/utils/window_effects.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:slugify/slugify.dart';
 

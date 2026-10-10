@@ -36,6 +36,8 @@ data class Chat(
     val avatarBytes: ByteArray?,
     val date: Long,
     val lastMessage: String,
+    val lastMessageIsFromMe: Boolean,
+    val unreadCount: Int,
     val isGroup: Boolean,
     val participantInfo: List<ParticipantInfo>
 ) {
@@ -54,6 +56,8 @@ data class Chat(
         } else if (other.avatarBytes != null) return false
         if (date != other.date) return false
         if (lastMessage != other.lastMessage) return false
+        if (lastMessageIsFromMe != other.lastMessageIsFromMe) return false
+        if (unreadCount != other.unreadCount) return false
         if (isGroup != other.isGroup) return false
         if (participantInfo != other.participantInfo) return false
 
@@ -67,7 +71,9 @@ data class Chat(
         result = 31 * result + (avatarBytes?.contentHashCode() ?: 0)
         result = 31 * result + date.hashCode()
         result = 31 * result + lastMessage.hashCode()
-        result = 31 * result + isGroup.hashCode()
+        result = 31 * result + lastMessageIsFromMe.hashCode()
+        result = 31 * result + unreadCount
+        result = 31 * result + if (isGroup) 1 else 0
         result = 31 * result + participantInfo.hashCode()
         return result
     }

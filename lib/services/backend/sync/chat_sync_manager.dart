@@ -8,7 +8,6 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response;
 import 'package:tuple/tuple.dart';
 import 'package:universal_io/io.dart';
-import 'package:windows_taskbar/windows_taskbar.dart';
 
 class ChatSyncManager extends SyncManager {
   final tag = 'ChatSyncManager';
@@ -32,9 +31,6 @@ class ChatSyncManager extends SyncManager {
     }
 
     super.start();
-    if (kIsDesktop && Platform.isWindows) {
-      await WindowsTaskbar.setProgressMode(TaskbarProgressMode.indeterminate);
-    }
 
     flush();
     addToOutput('Fetching chats from the server...');
@@ -51,10 +47,6 @@ class ChatSyncManager extends SyncManager {
     }
 
     try {
-      if (kIsDesktop && Platform.isWindows) {
-        await WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal);
-      }
-
       // This flag can be used to test the restore functionality
       if (simulateError) {
         throw Exception('Simulated Error!');
@@ -84,10 +76,6 @@ class ChatSyncManager extends SyncManager {
         if (chatProgress >= 1.0) {
           // When we've hit the last chunk, we're finished
           await complete();
-          if (kIsDesktop && Platform.isWindows) {
-            await WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress);
-            await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-          }
         } else if (status.value == SyncStatus.STOPPING) {
           // If we are supposed to be stopping, complete the future.
           // Also treat it as if there was an error and restore the original handles.
@@ -95,21 +83,12 @@ class ChatSyncManager extends SyncManager {
           if (completer != null && !completer!.isCompleted) {
             completer!.complete();
           }
-
-          if (kIsDesktop && Platform.isWindows) {
-            await WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress);
-            await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-          }
         }
       }
     } catch (e, s) {
       addToOutput('Failed to sync chats! Error: ${e.toString()}', level: LogLevel.ERROR);
       addToOutput(s.toString(), level: LogLevel.ERROR);
       completeWithError(e.toString());
-      if (kIsDesktop && Platform.isWindows) {
-        await WindowsTaskbar.setProgressMode(TaskbarProgressMode.error);
-        await WindowsTaskbar.setFlashTaskbarAppIcon(mode: TaskbarFlashMode.timernofg);
-      }
     }
 
     return completer!.future;
