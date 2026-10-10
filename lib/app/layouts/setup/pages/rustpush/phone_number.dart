@@ -264,7 +264,7 @@ class PhoneNumberState extends OptimizedState<PhoneNumber> {
                                           ),
                                           onTap: () {
                                             Clipboard.setData(const ClipboardData(text: "appops set --uid com.openbubbles.messaging USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER allow"));
-                                            if (!Platform.isAndroid || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
+                                            if (!true || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
                                               showSnackbar("Copied", "Command copied to clipboard!");
                                             }
                                           },

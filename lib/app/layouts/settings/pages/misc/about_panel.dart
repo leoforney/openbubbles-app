@@ -594,7 +594,7 @@ class _AboutPanelState extends OptimizedState<AboutPanel> {
                                                           style: context.theme.textTheme.bodyLarge),
                                                     if (kIsDesktop)
                                                       Text(
-                                                        "${fs.packageInfo.version}_${Platform.operatingSystem.capitalizeFirst!}${isSnap ? "_Snap" : isFlatpak ? "_Flatpak" : ""}",
+                                                        "${fs.packageInfo.version}_${"android".capitalizeFirst!}${isSnap ? "_Snap" : isFlatpak ? "_Flatpak" : ""}",
                                                         style: context.theme.textTheme.bodyLarge,
                                                       ),
                                                   ],

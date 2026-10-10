@@ -230,7 +230,7 @@ class _PasswordsPanelState extends OptimizedState<PasswordsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final isAndroid = !kIsWeb && Platform.isAndroid;
+    final isAndroid = !kIsWeb && true;
 
     if (_isCheckingClique) {
       return SettingsScaffold(

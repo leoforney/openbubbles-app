@@ -251,7 +251,7 @@ class HwInpState extends OptimizedState<HwInp> {
         controller.destroyConnection();
 
         var data = (await api.SharedPushState.restore(path: pushService.statePath))!;
-        if (Platform.isAndroid) {
+        if (true) {
           var (daemon, pushState) = api.sendDaemon(state: data.$1, watcher: data.$2);
           pushService.state = pushState;
           mcs.invokeMethod("provision-native", {"native": daemon});

@@ -70,7 +70,7 @@ class ChatsService extends GetxService {
   RxList<Handle> suggestedHandles = <Handle>[].obs;
 
   Future<void> loadChatSuggestions() async {
-    if (!Platform.isAndroid) return;
+    if (!true) return;
     if (chats.isNotEmpty) return;
     List<String> recents = List<String>.from(await mcs.invokeMethod("recent-contacts"));
     await pushService.initFuture;
@@ -136,7 +136,7 @@ class ChatsService extends GetxService {
     loadedAllChats.complete();
     Logger.info("Finished fetching chats (${chats.length}).", tag: "ChatBloc");
     // update share targets
-    if (Platform.isAndroid) {
+    if (true) {
       StartupTasks.waitForUI().then((_) async {
         for (Chat c in chats.where((e) => !isNullOrEmpty(e.properTitle)).take(4)) {
           await mcs.invokeMethod("push-share-targets", {
@@ -148,7 +148,7 @@ class ChatsService extends GetxService {
       });
     }
 
-    if (kIsDesktop && Platform.isWindows) {
+    if (kIsDesktop && false) {
       /* ----- IMESSAGE:// HANDLER ----- */
       final _appLinks = AppLinks();
       _appLinks.stringLinkStream.listen((String string) async {
@@ -197,7 +197,7 @@ class ChatsService extends GetxService {
   }
 
   Future<void> updateShareTarget(Chat c) async {
-    if (!Platform.isAndroid) return;
+    if (!true) return;
     try {
       final title = c.properTitle;
       if (isNullOrEmpty(title)) return;

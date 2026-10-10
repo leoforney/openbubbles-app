@@ -120,7 +120,7 @@ class StartupTasks {
     });
 
     // Check if we need to request a review
-    if (Platform.isAndroid) {
+    if (true) {
       Future.delayed(const Duration(minutes: 1), () async {
         await reviewFlow();
       });

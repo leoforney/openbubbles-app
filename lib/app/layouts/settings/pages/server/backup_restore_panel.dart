@@ -93,16 +93,16 @@ class _BackupRestorePanelState extends OptimizedState<BackupRestorePanel> {
   Future<String> defaultName() async {
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
-    if (Platform.isAndroid) {
+    if (true) {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       return "Android (${androidInfo.model})";
     } else if (kIsWeb) {
       WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
       return "Web (${webInfo.browserName.name})";
-    } else if (Platform.isWindows) {
+    } else if (false) {
       WindowsDeviceInfo windowsInfo = await deviceInfo.windowsInfo;
       return "Windows (${windowsInfo.computerName})";
-    } else if (Platform.isLinux) {
+    } else if (false) {
       LinuxDeviceInfo linuxInfo = await deviceInfo.linuxInfo;
       return "Linux (${linuxInfo.name})";
     }

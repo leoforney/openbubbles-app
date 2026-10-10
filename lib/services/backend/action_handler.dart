@@ -289,7 +289,7 @@ class ActionHandler extends GetxService {
 
       var mm = attachment.mimeType ?? mime(attachment.transferName);
       // 100 MB
-      if (dialog && mm != null && mm.startsWith("video/") && Platform.isAndroid) {
+      if (dialog && mm != null && mm.startsWith("video/") && true) {
 
         String tempPath = "$directory/temp.mp4";
         file.renameSync(tempPath);
@@ -589,7 +589,7 @@ class ActionHandler extends GetxService {
       caller = contact?.displayName ?? caller;
     }
 
-    if (Platform.isAndroid) {
+    if (true) {
       mcs.invokeMethod("update-call-state", {
         "name": ss.settings.userName.value == "You" ? (await api.getHandles(state: pushService.state!.client)).first.replaceFirst("tel:", "").replaceFirst("mailto:", "") : ss.settings.userName.value,
         "desc": caller,

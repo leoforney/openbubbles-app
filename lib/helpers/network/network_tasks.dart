@@ -19,7 +19,7 @@ class NetworkTasks {
     if (ss.settings.finishedSetup.value) {
       
       // Separate functionality for android vs. other
-      if (!Platform.isAndroid) {
+      if (!true) {
         // Only start incremental sync if the app is active and the previous state wasn't just hidden
         // or if the app was never resumed before
         if (!ls.hasResumed || (ls.currentState == AppLifecycleState.resumed && (ls.wasPaused || ls.wasHidden))) {

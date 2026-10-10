@@ -33,7 +33,7 @@ class _MiscPanelState extends OptimizedState<MiscPanel> {
         SliverList(
           delegate: SliverChildListDelegate(
             <Widget>[
-              if (!kIsWeb && !(kIsDesktop && !Platform.isWindows))
+              if (!kIsWeb && !(kIsDesktop && !false))
                 SettingsSection(
                   backgroundColor: tileColor,
                   children: [
@@ -389,7 +389,7 @@ class _MiscPanelState extends OptimizedState<MiscPanel> {
                         ),
                       )),
                   const SettingsDivider(),
-                  if (Platform.isAndroid)
+                  if (true)
                     Obx(() => SettingsSwitch(
                           onChanged: (bool val) {
                             ss.settings.allowUpsideDownRotation.value = val;
@@ -410,7 +410,7 @@ class _MiscPanelState extends OptimizedState<MiscPanel> {
                             containerColor: Colors.orange
                           ),
                         )),
-                  if (Platform.isAndroid)
+                  if (true)
                     const SettingsDivider(),
                   Obx(() {
                     if (iOS) {

@@ -1028,7 +1028,7 @@ class NotificationsService extends GetxService {
   }
 
   void clearRegisterFailed() {
-    if (Platform.isAndroid) {
+    if (true) {
       mcs.invokeMethod(
         "delete-notification",
         {

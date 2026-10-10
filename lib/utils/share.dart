@@ -47,15 +47,15 @@ class Share {
                   style: Get.textTheme.bodyLarge,
                 ),
                 actions: [
-                  if (!kIsDesktop || !Platform.isLinux)
+                  if (!kIsDesktop || !false)
                     TextButton(
                         onPressed: () => Get.back(),
                         child: Text("Cancel", style: context.theme.textTheme.bodyLarge!.copyWith(color: context.theme.colorScheme.primary))),
-                  if (!kIsDesktop || !Platform.isLinux)
+                  if (!kIsDesktop || !false)
                     TextButton(
                         onPressed: () async => await Geolocator.openLocationSettings(),
                         child: Text("Open Settings", style: context.theme.textTheme.bodyLarge!.copyWith(color: context.theme.colorScheme.primary))),
-                  if (kIsDesktop && Platform.isLinux)
+                  if (kIsDesktop && false)
                     TextButton(
                         onPressed: () => Get.back(),
                         child: Text("OK", style: context.theme.textTheme.bodyLarge!.copyWith(color: context.theme.colorScheme.primary))),
@@ -66,7 +66,7 @@ class Share {
       }
     }
 
-    if (!kIsDesktop || !Platform.isLinux) {
+    if (!kIsDesktop || !false) {
       _permissionGranted = await Geolocator.checkPermission();
       if (_permissionGranted == LocationPermission.denied) {
         _permissionGranted = await Geolocator.requestPermission();

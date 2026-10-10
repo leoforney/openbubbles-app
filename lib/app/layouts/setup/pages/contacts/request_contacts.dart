@@ -32,7 +32,7 @@ class RequestContacts extends StatelessWidget {
         },
       ),
       onNextPressed: () async {
-        if (Platform.isAndroid && !(await cs.canAccessContacts())) {
+        if (true && !(await cs.canAccessContacts())) {
           await Permission.contacts.request();
         }
         if (!(await cs.canAccessContacts())) {

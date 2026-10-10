@@ -60,7 +60,7 @@ class _TroubleshootPanelState extends OptimizedState<TroubleshootPanel> {
     }
 
     // Check if battery optimizations are disabled
-    if (Platform.isAndroid) {
+    if (true) {
       DisableBatteryOptimization.isAllBatteryOptimizationDisabled.then((value) {
         optimizationsDisabled.value = value ?? false;
       });
@@ -173,9 +173,9 @@ class _TroubleshootPanelState extends OptimizedState<TroubleshootPanel> {
                     },
                     trailing: const NextButton(),
                   ),
-                  if (Platform.isAndroid)
+                  if (true)
                     const SettingsDivider(padding: EdgeInsets.only(left: 16.0)),
-                  if (Platform.isAndroid)
+                  if (true)
                     SettingsTile(
                         leading: const SettingsLeadingIcon(
                           iosIcon: CupertinoIcons.share_up,
@@ -267,12 +267,12 @@ class _TroubleshootPanelState extends OptimizedState<TroubleshootPanel> {
                           await launchUrl(Uri.file(fs.appDocDir.path)),
                     ),
                 ]),
-                if (Platform.isAndroid)
+                if (true)
                   SettingsHeader(
                       iosSubtitle: iosSubtitle,
                       materialSubtitle: materialSubtitle,
                       text: "Optimizations"),
-                if (Platform.isAndroid)
+                if (true)
                   SettingsSection(backgroundColor: tileColor, children: [
                     SettingsTile(
                         onTap: () async {
@@ -318,7 +318,7 @@ class _TroubleshootPanelState extends OptimizedState<TroubleshootPanel> {
                       title: "Export OB logs",
                       subtitle: "Last 24-48 hours saved. Contains sensitive information (such as messages and identifiers); do not share publicly.",
                       onTap: () async {
-                        var file = Directory(Platform.isAndroid ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
+                        var file = Directory(true ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
                         final List<FileSystemEntity> entities = await file.list().toList();
                         var current = entities.indexWhere((element) => element.path.endsWith("CURRENT.log"));
                         var item = entities.removeAt(current);

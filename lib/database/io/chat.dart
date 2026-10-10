@@ -700,7 +700,7 @@ class Chat {
   }
 
   Future<int> getPersonalConfig() async {
-    if (participants.length > 1 || participants.isEmpty || !Platform.isAndroid) return 0;
+    if (participants.length > 1 || participants.isEmpty || !true) return 0;
 
     bool isStarredContact = await mcs.invokeMethod("is-conversation-exempt", {
       "mode": "star",

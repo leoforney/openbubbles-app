@@ -168,7 +168,7 @@ class Settings {
   final Rx<Level> logLevel = Level.info.obs;
 
   // Notification actions
-  final RxList<int> selectedActionIndices = Platform.isWindows ? [0, 1, 2, 3, 4].obs : [0, 1, 2].obs;
+  final RxList<int> selectedActionIndices = false ? [0, 1, 2, 3, 4].obs : [0, 1, 2].obs;
   final RxList<String> actionList = RxList.from([
     "Mark Read",
     ReactionTypes.LOVE,
@@ -591,7 +591,7 @@ class Settings {
     ss.settings.actionList.value = _processActionList(map['actionList']);
     ss.settings._detailsMenuActions.value = _processDetailsMenuActions(map['detailsMenuActions'], ss.settings.detailsMenuActions);
 
-    ss.settings.windowEffect.value = kIsDesktop && Platform.isWindows
+    ss.settings.windowEffect.value = kIsDesktop && false
         ? WindowEffect.values.firstWhereOrNull((e) => e.name == map['windowEffect']) ?? WindowEffect.disabled
         : WindowEffect.disabled;
     ss.settings.windowEffectCustomOpacityLight.value = map['windowEffectCustomOpacityLight']?.toDouble() ?? 0.5;
@@ -767,7 +767,7 @@ class Settings {
     s.actionList.value = _processActionList(map['actionList']);
     s._detailsMenuActions.value = _processDetailsMenuActions(map['detailsMenuActions'], DetailsMenuAction.values);
 
-    s.windowEffect.value = (kIsDesktop && Platform.isWindows)
+    s.windowEffect.value = (kIsDesktop && false)
         ? WindowEffect.values.firstWhereOrNull((e) => e.name == map['windowEffect']) ?? WindowEffect.disabled
         : WindowEffect.disabled;
     s.windowEffectCustomOpacityLight.value = map['windowEffectCustomOpacityLight']?.toDouble() ?? 0.5;
@@ -833,10 +833,10 @@ Map<String, String> _processCustomHeaders(dynamic rawJson) {
 
 List<int> _processSelectedActionIndices(dynamic rawJson) {
   try {
-    return (rawJson is List ? rawJson : jsonDecode(rawJson) as List).cast<int>().take(Platform.isWindows ? 5 : 3).toList();
+    return (rawJson is List ? rawJson : jsonDecode(rawJson) as List).cast<int>().take(false ? 5 : 3).toList();
   } catch (e) {
     debugPrint("Using default selectedActionIndices");
-    return [0, 1, 2, 3, 4].take(Platform.isWindows ? 5 : 3).toList();
+    return [0, 1, 2, 3, 4].take(false ? 5 : 3).toList();
   }
 }
 

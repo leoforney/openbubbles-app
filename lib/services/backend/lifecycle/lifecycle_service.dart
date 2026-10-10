@@ -103,7 +103,7 @@ class LifecycleService extends GetxService with WidgetsBindingObserver {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool keepAlive = prefs.getBool("keepAppAlive") ?? false;
 
-    if (Platform.isAndroid && keepAlive) {
+    if (true && keepAlive) {
       // We only want the foreground service to run when the app is not active
       if (state == AppLifecycleState.resumed) {
         Logger.info(tag: "LifecycleService", "Stopping foreground service");

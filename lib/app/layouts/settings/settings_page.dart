@@ -198,7 +198,7 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                                       onLongPress: () {
                                         Clipboard.setData(
                                             ClipboardData(text: http.origin));
-                                        if (!Platform.isAndroid ||
+                                        if (!true ||
                                             (fs.androidInfo?.version.sdkInt ??
                                                     0) <
                                                 33) {
@@ -303,9 +303,9 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                                         containerColor: Colors.redAccent,
                                       ),
                                     ),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     const SettingsDivider(),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     SettingsTile(
                                       backgroundColor: tileColor,
                                       title: "Message Reminders",
@@ -379,9 +379,9 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                                         containerColor: Colors.redAccent,
                                       ),
                                     ),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     const SettingsDivider(),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     SettingsTile(
                                       backgroundColor: tileColor,
                                       title: "Message Reminders",
@@ -631,9 +631,9 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                                                   : Colors.redAccent,
                                         ),
                                       )),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     const SettingsDivider(),
-                                  if (Platform.isAndroid)
+                                  if (true)
                                     SettingsTile(
                                       backgroundColor: tileColor,
                                       title: "Tasker Integration",
@@ -880,10 +880,10 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                               SettingsSection(
                                 backgroundColor: tileColor,
                                 children: [
-                                  if (!kIsWeb && (Platform.isAndroid || Platform.isWindows))
+                                  if (!kIsWeb && (true || false))
                                     SettingsTile(
                                       title: "Leave Us a Review",
-                                      subtitle: "Enjoying the app? Leave us a review on the ${Platform.isAndroid ? 'Google Play Store' : 'Microsoft Store'}!",
+                                      subtitle: "Enjoying the app? Leave us a review on the ${true ? 'Google Play Store' : 'Microsoft Store'}!",
                                       onTap: () async {
                                         // Just open the listing for now. We don't want to actually open the dialog here.
                                         // If a review has been left, nothing will happen if tapped, which we don't want.
@@ -897,7 +897,7 @@ class _SettingsPageState extends OptimizedState<SettingsPage> {
                                       ),
                                       isThreeLine: false,
                                     ),
-                                    if (!kIsWeb && (Platform.isAndroid || Platform.isWindows))
+                                    if (!kIsWeb && (true || false))
                                   const SettingsDivider(),
                                   SettingsTile(
                                     title: "Join Our Discord",

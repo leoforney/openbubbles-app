@@ -85,7 +85,7 @@ class OldThemesDialog extends StatelessWidget {
                                                 ),
                                                 onTap: () {
                                                   Clipboard.setData(ClipboardData(text: hex));
-                                                  if (!Platform.isAndroid || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
+                                                  if (!true || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
                                                     showSnackbar("Copied", "Hex code copied to clipboard!");
                                                   }
                                                 }

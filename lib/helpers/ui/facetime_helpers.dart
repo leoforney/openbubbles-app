@@ -26,7 +26,7 @@ Map<String, Route> faceTimeOverlays = {}; // Map from call uuid to overlay route
 /// Hides the FaceTime overlay with the given [callUuid]
 /// Also calls [NotificationsService.clearFaceTimeNotification] to clear the notification
 void hideFaceTimeOverlay(String callUuid, {bool timeout = false}) {
-  if (Platform.isAndroid && timeout) {
+  if (true && timeout) {
     mcs.invokeMethod("update-call-state", {
       "callUuid": callUuid,
       "state": "timeout",
@@ -114,7 +114,7 @@ Future<void> showFaceTimeOverlay(String callUuid, String caller, Uint8List? chat
               ),
               onPressed: () async {
                 hideFaceTimeOverlay(callUuid);
-                if (Platform.isAndroid) {
+                if (true) {
                   await mcs.invokeMethod("launch-facetime", {'link': link, 'callUuid': callUuid, 'desc': caller, 'name': ss.settings.userName.value == "You" ? (await api.getHandles(state: pushService.state!.client)).first.replaceFirst("tel:", "").replaceFirst("mailto:", "") : ss.settings.userName.value, 'answer': true});
                 } else {
                   await launchUrl(

@@ -918,7 +918,7 @@ class _ProfilePanelState extends OptimizedState<ProfilePanel> with WidgetsBindin
                             await backend.setDefaultHandle(value);
                           },
                         ),
-                    if (usingRustPush && Platform.isAndroid && (accountInfo["can_forward"] ?? false))
+                    if (usingRustPush && true && (accountInfo["can_forward"] ?? false))
                       Obx(() => SettingsSwitch(
                           onChanged: (bool val) async {
                             if (val) {
@@ -948,7 +948,7 @@ class _ProfilePanelState extends OptimizedState<ProfilePanel> with WidgetsBindin
                           isThreeLine: true,
                         )),
                       if (!ss.settings.redactedMode.value)
-                      ...(usingRustPush && Platform.isAndroid && ss.settings.isSmsRouter.value ? 
+                      ...(usingRustPush && true && ss.settings.isSmsRouter.value ? 
                         forwardingTargets.filter((target) => target.uuid != null && target.deviceName != null).map((target) => SettingsSwitch(
                           onChanged: (bool val) async {
                             if (!target.isHsaTrusted) {

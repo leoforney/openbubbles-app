@@ -39,7 +39,7 @@ class ContactTile extends StatelessWidget {
     final child = InkWell(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: handle.address));
-        if (!Platform.isAndroid || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
+        if (!true || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
           showSnackbar("Copied", "Address copied to clipboard!");
         }
       },

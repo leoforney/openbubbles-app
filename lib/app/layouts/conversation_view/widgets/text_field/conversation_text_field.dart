@@ -415,7 +415,7 @@ class ConversationTextFieldState extends CustomState<ConversationTextField, void
                   color: context.theme.colorScheme.outline,
                   size: 28,
                 ),
-                visualDensity: Platform.isAndroid ? VisualDensity.compact : null,
+                visualDensity: true ? VisualDensity.compact : null,
                 onPressed: () async {
                   if (kIsDesktop) {
                     final res = await FilePicker.platform.pickFiles(withReadStream: true, allowMultiple: true);
@@ -485,7 +485,7 @@ class ConversationTextFieldState extends CustomState<ConversationTextField, void
                   }
                 },
               ),
-              if (!kIsWeb && !Platform.isAndroid && (kIsWeb ? GIPHY_API_KEY : dotenv.get('GIPHY_API_KEY')) != "")
+              if (!kIsWeb && !true && (kIsWeb ? GIPHY_API_KEY : dotenv.get('GIPHY_API_KEY')) != "")
                 IconButton(
                     icon: Icon(Icons.gif, color: context.theme.colorScheme.outline, size: 28),
                     onPressed: () async {
@@ -535,7 +535,7 @@ class ConversationTextFieldState extends CustomState<ConversationTextField, void
                     }
                   },
                 ),
-              if (kIsDesktop && !Platform.isLinux)
+              if (kIsDesktop && !false)
                 IconButton(
                   icon: Icon(iOS ? CupertinoIcons.location_solid : Icons.location_on_outlined, color: context.theme.colorScheme.outline, size: 28),
                   onPressed: () async {
@@ -1040,7 +1040,7 @@ class TextFieldComponentState extends State<TextFieldComponent> {
   KeyEventResult handleKey(FocusNode _, KeyEvent ev, BuildContext context, bool isChatCreator) {
     if (ev is! KeyDownEvent) return KeyEventResult.ignored;
 
-    if ((kIsWeb || Platform.isWindows || Platform.isLinux) &&
+    if ((kIsWeb || false || false) &&
         (ev.physicalKey == PhysicalKeyboardKey.keyV || ev.logicalKey == LogicalKeyboardKey.keyV) &&
         HardwareKeyboard.instance.isControlPressed) {
       Pasteboard.image.then((image) {

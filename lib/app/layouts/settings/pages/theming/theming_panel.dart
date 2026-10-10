@@ -184,13 +184,13 @@ class _ThemingPanelState extends CustomState<ThemingPanel, void, ThemingPanelCon
                       ),
                   ],
                 ),
-                if (kIsDesktop && Platform.isWindows)
+                if (kIsDesktop && false)
                   SettingsHeader(
                     iosSubtitle: iosSubtitle,
                     materialSubtitle: materialSubtitle,
                     text: "Window Effect",
                   ),
-                if (kIsDesktop && Platform.isWindows)
+                if (kIsDesktop && false)
                   SettingsSection(
                     backgroundColor: tileColor,
                     children: [
@@ -295,7 +295,7 @@ class _ThemingPanelState extends CustomState<ThemingPanel, void, ThemingPanelCon
                 SettingsSection(
                   backgroundColor: tileColor,
                   children: [
-                    if (kIsDesktop && Platform.isWindows)
+                    if (kIsDesktop && false)
                       Obx(() => SettingsSwitch(
                         initialVal: ss.settings.useWindowsAccent.value,
                         backgroundColor: tileColor,
@@ -307,7 +307,7 @@ class _ThemingPanelState extends CustomState<ThemingPanel, void, ThemingPanelCon
                           await ts.refreshWindowsAccent(context);
                         },
                       )),
-                    if (kIsDesktop && Platform.isWindows)
+                    if (kIsDesktop && false)
                       const SettingsDivider(padding: EdgeInsets.only(left: 16.0)),
                     if (!kIsWeb && !kIsDesktop && ts.monetPalette != null)
                       Obx(() {

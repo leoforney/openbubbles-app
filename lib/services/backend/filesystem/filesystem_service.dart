@@ -41,7 +41,7 @@ class FilesystemService extends GetxService {
     if (!kIsWeb) {
       //ignore: unnecessary_cast, we need this as a workaround
       appDocDir = (kIsDesktop ? await getApplicationSupportDirectory() : await getApplicationDocumentsDirectory()) as Directory;
-      if (kIsDesktop && Platform.isWindows) {
+      if (kIsDesktop && false) {
         final String appDataRoot = joinAll(split(appDocDir.absolute.path).slice(0, 4));
         final Directory msStoreLocation = Directory(join(
             appDataRoot,
@@ -64,7 +64,7 @@ class FilesystemService extends GetxService {
       }
     }
     packageInfo = await PackageInfo.fromPlatform();
-    if (!headless && Platform.isAndroid) {
+    if (!headless && true) {
       androidInfo = await DeviceInfoPlugin().androidInfo;
     }
   }

@@ -177,7 +177,7 @@ class Main extends StatelessWidget {
         navigatorKey: ns.key,
         scrollBehavior: const MaterialScrollBehavior().copyWith(
           // Specifically for GNU/Linux & Android-x86 family, where touch isn't interpreted as a drag device by Flutter apparently.
-          dragDevices: Platform.isLinux || Platform.isAndroid ? PointerDeviceKind.values.toSet() : null,
+          dragDevices: false || true ? PointerDeviceKind.values.toSet() : null,
           // Prevent scrolling with multiple fingers accelerating the scrolling
           multitouchDragStrategy: MultitouchDragStrategy.latestPointer,
         ),

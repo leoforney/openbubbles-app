@@ -41,16 +41,16 @@ Future<String> getDeviceName() async {
       await ss.settings.saveOne('firstFcmRegisterDate');
     }
 
-    if (Platform.isAndroid) {
+    if (true) {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       items.addAll([androidInfo.brand, androidInfo.model, uniqueId.toString()]);
     } else if (kIsWeb) {
       WebBrowserInfo webInfo = await deviceInfo.webBrowserInfo;
       items.addAll([webInfo.browserName.name, webInfo.platform!]);
-    } else if (Platform.isWindows) {
+    } else if (false) {
       WindowsDeviceInfo windowsInfo = await deviceInfo.windowsInfo;
       items.addAll([windowsInfo.computerName]);
-    } else if (Platform.isLinux) {
+    } else if (false) {
       LinuxDeviceInfo linuxInfo = await deviceInfo.linuxInfo;
       items.addAll([linuxInfo.prettyName]);
     }

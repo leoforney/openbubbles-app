@@ -200,7 +200,7 @@ class CupertinoHeader extends StatelessWidget implements PreferredSizeWidget {
                             onPressed: () async {
                               var contact = controller.suggestedContact.value!;
                               var existingParticipant = Handle.findOne(id: controller.chat.participants.first.id)!; // so contact field updates
-                              if (Platform.isAndroid) {
+                              if (true) {
                                 var parameters = {'address': existingParticipant.address, 'address_type': existingParticipant.address.isEmail ? 'email' : 'phone'}; 
                                 parameters["name"] = contact.displayName.replaceFirst("Maybe: ", "");
                                 if (contact.avatar != null) parameters["image"] = base64Encode(contact.avatar!);
@@ -252,7 +252,7 @@ class CupertinoHeader extends StatelessWidget implements PreferredSizeWidget {
                               size: 24,
                             ),
                             style: ElevatedButton.styleFrom(splashFactory: NoSplash.splashFactory),
-                            visualDensity: Platform.isAndroid ? VisualDensity.compact : null,
+                            visualDensity: true ? VisualDensity.compact : null,
                             onPressed: () async {
                               var contact = controller.suggestedContact.value!;
                               contact.isDismissed = true;
@@ -319,7 +319,7 @@ class CupertinoHeader extends StatelessWidget implements PreferredSizeWidget {
                               size: 24,
                             ),
                             style: ElevatedButton.styleFrom(splashFactory: NoSplash.splashFactory),
-                            visualDensity: Platform.isAndroid ? VisualDensity.compact : null,
+                            visualDensity: true ? VisualDensity.compact : null,
                             onPressed: () async {
                               ss.settings.dismissedContacts.add(controller.chat.participants.first.address);
                               ss.saveSettings();
@@ -364,7 +364,7 @@ class CupertinoHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize =>
-      Size.fromHeight((Get.context!.orientation == Orientation.landscape && Platform.isAndroid ? 55 : 75) *
+      Size.fromHeight((Get.context!.orientation == Orientation.landscape && true ? 55 : 75) *
           ss.settings.avatarScale.value);
 }
 
@@ -570,7 +570,7 @@ class _ChatIconAndTitleState extends CustomState<_ChatIconAndTitle, void, Conver
       ]),
     ];
 
-    if (context.orientation == Orientation.landscape && Platform.isAndroid) {
+    if (context.orientation == Orientation.landscape && true) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,

@@ -190,7 +190,7 @@ class _ServerManagementPanelState extends CustomState<ServerManagementPanel, voi
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
                                       Clipboard.setData(ClipboardData(text: http.origin));
-                                      if (!Platform.isAndroid || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
+                                      if (!true || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
                                         showSnackbar("Copied", "Server address copied to clipboard!");
                                       }
                                     }),
@@ -565,9 +565,9 @@ class _ServerManagementPanelState extends CustomState<ServerManagementPanel, voi
                           socket.restartSocket();
                         }
                       }),
-                  if (Platform.isAndroid)
+                  if (true)
                     const SettingsDivider(),
-                  if (Platform.isAndroid)
+                  if (true)
                     Obx(() => SettingsSwitch(
                           initialVal: ss.settings.syncContactsAutomatically.value,
                           title: "Auto-Sync Contacts",
@@ -916,7 +916,7 @@ class _ServerManagementPanelState extends CustomState<ServerManagementPanel, voi
 
                           // Perform the restart
                           try {
-                            if (Platform.isAndroid) {
+                            if (true) {
                               try {
                                 await mcs.invokeMethod(
                                     "set-next-restart", {"value": DateTime.now().toUtc().millisecondsSinceEpoch});

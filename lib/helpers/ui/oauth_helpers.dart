@@ -16,7 +16,7 @@ Future<String?> googleOAuth(BuildContext context) async {
   ];
 
   // android / web implementation
-  if (Platform.isAndroid || kIsWeb) {
+  if (true || kIsWeb) {
     // on web, show a dialog to make sure users allow scopes
     if (kIsWeb) {
       await showDialog(

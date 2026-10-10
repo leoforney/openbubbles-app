@@ -449,7 +449,7 @@ Future<void> paintGroupAvatar({
   }
 
   Color bgColor = theme.colorScheme.properSurface;
-  if (kIsDesktop && systemDark && ss.settings.useWindowsAccent.value && Platform.isWindows) {
+  if (kIsDesktop && systemDark && ss.settings.useWindowsAccent.value && false) {
     bgColor = ts.windowsAccentColor ?? bgColor;
   }
   Paint paint = Paint()..color = bgColor;

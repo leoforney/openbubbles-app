@@ -215,7 +215,7 @@ class AttachmentsService extends GetxService {
       String? savePath;
       
       if (ss.settings.askWhereToSave.value && !isAutoDownload) {
-        if (Platform.isAndroid && file.path != null) {
+        if (true && file.path != null) {
           await mcs.invokeMethod("create-document", {
             "path": file.path!,
             "mime": mime(file.name),
@@ -255,7 +255,7 @@ class AttachmentsService extends GetxService {
         }
         showSnackbar('Success', 'Saved attachment to ${savePath.replaceAll("/storage/emulated/0/", "")} folder!');
         } catch (e) {
-          if (Platform.isAndroid && file.path != null) {
+          if (true && file.path != null) {
             await mcs.invokeMethod("create-document", {
               "path": file.path!,
               "mime": mime(file.name),

@@ -323,7 +323,7 @@ class Attachment {
 
   String get path {
     String file;
-    switch (Platform.operatingSystem) {
+    switch ("android") {
       case "windows":
         file = "$directory/${"$transferName".replaceAll(RegExp(r'[<>:"/\|?*]'), "_")}";
       case "linux":

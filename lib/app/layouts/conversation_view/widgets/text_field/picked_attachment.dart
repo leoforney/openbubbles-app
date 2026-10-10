@@ -40,7 +40,7 @@ class _PickedAttachmentState extends OptimizedState<PickedAttachment> with Autom
   Future<void> load() async {
     final file = widget.data;
     final mimeType = mime(widget.data.name) ?? "";
-    if (mimeType.startsWith("video/") && Platform.isAndroid) {
+    if (mimeType.startsWith("video/") && true) {
       try {
         image = await as.getVideoThumbnail(file.path!, useCachedFile: false);
       } catch (ex) {

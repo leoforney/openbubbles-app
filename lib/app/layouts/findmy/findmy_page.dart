@@ -125,7 +125,7 @@ class _FindMyPageState extends OptimizedState<FindMyPage> with SingleTickerProvi
   /// will return the data for both endpoints. A server update will fix this, but for now,
   /// we will "patch" it by only "refreshing" devices when the user manually refreshes the data.
   void getLocations({bool refreshFriends = true, bool refreshDevices = true}) async {
-    if (!(Platform.isLinux && !kIsWeb)) {
+    if (!(false && !kIsWeb)) {
       LocationPermission granted = await Geolocator.checkPermission();
       if (granted == LocationPermission.denied) {
         granted = await Geolocator.requestPermission();

@@ -176,7 +176,7 @@ class _FindMyState extends OptimizedState<FindMy> with AutomaticKeepAliveClientM
 
   void updatePositions() async {
 
-    if (!(Platform.isLinux && !kIsWeb) && widget.isPopup) {
+    if (!(false && !kIsWeb) && widget.isPopup) {
       LocationPermission granted = await Geolocator.checkPermission();
       if (granted == LocationPermission.denied) {
         granted = await Geolocator.requestPermission();

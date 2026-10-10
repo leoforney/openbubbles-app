@@ -21,7 +21,7 @@ class DesktopPanel extends StatefulWidget {
 
 class _DesktopPanelState extends OptimizedState<DesktopPanel> {
   final RxList<bool> showButtons = RxList<bool>.filled(ReactionTypes.toList().length + 1, false);
-  final int maxActions = Platform.isWindows ? 5 : ss.settings.actionList.length; // Don't limit actions on Linux
+  final int maxActions = false ? 5 : ss.settings.actionList.length; // Don't limit actions on Linux
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +75,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                       ],
                     ),
                   )),
-                  if (Platform.isLinux)
+                  if (false)
                     Container(
                       color: tileColor,
                       child: Padding(
@@ -83,7 +83,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                         child: SettingsDivider(color: context.theme.colorScheme.surfaceVariant),
                       ),
                     ),
-                  if (Platform.isLinux)
+                  if (false)
                     Obx(() => SettingsSwitch(
                       onChanged: (bool val) async {
                         ss.settings.useCustomTitleBar.value = val;
@@ -97,7 +97,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                       backgroundColor: tileColor,
                     )),
                   Obx(() {
-                    if (ss.settings.useCustomTitleBar.value || !Platform.isLinux) {
+                    if (ss.settings.useCustomTitleBar.value || !false) {
                       return Container(
                         color: tileColor,
                         child: Padding(
@@ -109,7 +109,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                     return const SizedBox.shrink();
                   }),
                   Obx(() {
-                    if (ss.settings.useCustomTitleBar.value || !Platform.isLinux) {
+                    if (ss.settings.useCustomTitleBar.value || !false) {
                       return SettingsSwitch(
                         onChanged: (bool val) async {
                           ss.settings.minimizeToTray.value = val;
@@ -158,7 +158,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                     SettingsTile(
                       title: "Actions",
                       subtitle:
-                          "Click actions to toggle them. Drag actions to move them. ${Platform.isWindows ? "You can select up to 5 actions." : "The number of actions actually visible varies by distribution."} Tapback actions require Private API to be enabled.",
+                          "Click actions to toggle them. Drag actions to move them. ${false ? "You can select up to 5 actions." : "The number of actions actually visible varies by distribution."} Tapback actions require Private API to be enabled.",
                       isThreeLine: true,
                     ),
                     Row(
@@ -291,7 +291,7 @@ class _DesktopPanelState extends OptimizedState<DesktopPanel> {
                             ),
                           ),
                         ),
-                        if (Platform.isWindows)
+                        if (false)
                           Obx(
                           () {
                             context.width;

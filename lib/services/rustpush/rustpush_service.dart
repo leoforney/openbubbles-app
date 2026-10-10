@@ -479,7 +479,7 @@ class RustPushBackend implements BackendService {
     }
 
     // android doesn't support CAF, convert to m4a
-    if (attachment.uti == "com.apple.coreaudio-format" && Platform.isAndroid) {
+    if (attachment.uti == "com.apple.coreaudio-format" && true) {
       await File(attachment.path).rename("${attachment.directory}/encode.caf");
       var session = await FFmpegKit.execute("-i \"${attachment.directory}/encode.caf\" \"${attachment.directory}/encode.m4a\"");
 
@@ -3218,7 +3218,7 @@ class RustPushService extends GetxService {
           outgoingCallTimer?.cancel();
           chosenFTRoomGuid = facetime.guid;
 
-          if (Platform.isAndroid) {
+          if (true) {
             await mcs.invokeMethod("launch-facetime", outgoingCallMeta);
           } else {
             await launchUrl(
@@ -4802,7 +4802,7 @@ class RustPushService extends GetxService {
       vpnDetector.vpnConnectionStream.listen((state) {
         tryWarnVpn();
       });
-      if (Platform.isAndroid) {
+      if (true) {
         Logger.info("tryingService");
         serviceId = await mcs.invokeMethod("get-native-handle");
         if (serviceId != "0") {
@@ -5029,7 +5029,7 @@ class RustPushService extends GetxService {
   Future configured() async {
     await handleRegistered();
     Timer(const Duration(seconds: 2), checkIncident);
-    if (Platform.isAndroid) {
+    if (true) {
       await mcs.invokeMethod("notify-native-configured");
     }
   }

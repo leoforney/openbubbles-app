@@ -99,14 +99,14 @@ class MaterialHeader extends StatelessWidget implements PreferredSizeWidget {
           padding: EdgeInsets.only(top: kIsDesktop ? 20 : 0),
           child: ManualMark(controller: controller),
         ),
-        if (Platform.isAndroid && !controller.chat.isGroup && controller.chat.participants.first.address.isPhoneNumber)
+        if (true && !controller.chat.isGroup && controller.chat.participants.first.address.isPhoneNumber)
           IconButton(
             icon: Icon(Icons.call_outlined, color: context.theme.colorScheme.onBackground),
             onPressed: () {
               launchUrl(Uri(scheme: "tel", path: controller.chat.participants.first.address));
             },
           ),
-        if (Platform.isAndroid && !controller.chat.isGroup && controller.chat.participants.first.address.isEmail)
+        if (true && !controller.chat.isGroup && controller.chat.participants.first.address.isEmail)
           IconButton(
             icon: Icon(Icons.mail_outlined, color: context.theme.colorScheme.onBackground),
             onPressed: () {
@@ -281,7 +281,7 @@ class MaterialHeader extends StatelessWidget implements PreferredSizeWidget {
                             ),
                             onPressed: () async {
                               var contact = controller.suggestedContact.value!;
-                              if (Platform.isAndroid) {
+                              if (true) {
                                 var parameters = {'address': controller.chat.participants.first.address, 'address_type': controller.chat.participants.first.address.isEmail ? 'email' : 'phone'}; 
                                 parameters["name"] = contact.displayName.replaceFirst("Maybe: ", "");
                                 if (contact.avatar != null) parameters["image"] = base64Encode(contact.avatar!);
@@ -325,7 +325,7 @@ class MaterialHeader extends StatelessWidget implements PreferredSizeWidget {
                               size: 24,
                             ),
                             style: ElevatedButton.styleFrom(splashFactory: NoSplash.splashFactory),
-                            visualDensity: Platform.isAndroid ? VisualDensity.compact : null,
+                            visualDensity: true ? VisualDensity.compact : null,
                             onPressed: () async {
                               var contact = controller.suggestedContact.value!;
                               contact.isDismissed = true;
@@ -393,7 +393,7 @@ class MaterialHeader extends StatelessWidget implements PreferredSizeWidget {
                               size: 24,
                             ),
                             style: ElevatedButton.styleFrom(splashFactory: NoSplash.splashFactory),
-                            visualDensity: Platform.isAndroid ? VisualDensity.compact : null,
+                            visualDensity: true ? VisualDensity.compact : null,
                             onPressed: () async {
                               ss.settings.dismissedContacts.add(controller.chat.participants.first.address);
                               ss.saveSettings();

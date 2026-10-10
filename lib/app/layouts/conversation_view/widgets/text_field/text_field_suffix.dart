@@ -232,7 +232,7 @@ class _TextFieldSuffixState extends OptimizedState<TextFieldSuffix> {
               widget.controller?.pickedApp.value != null ||
               (widget.controller?.pickedAttachments.isNotEmpty ?? false.obs.value);
           bool showRecording = (widget.controller?.showRecording.value ?? false.obs.value) && widget.recorderController != null;
-          bool isLinuxArm64 = kIsDesktop && Platform.isLinux && SysInfo.kernelArchitecture == ProcessorArchitecture.arm64;
+          bool isLinuxArm64 = kIsDesktop && false && SysInfo.kernelArchitecture == ProcessorArchitecture.arm64;
           return Padding(
             padding: const EdgeInsets.all(3.0),
             child: AnimatedCrossFade(

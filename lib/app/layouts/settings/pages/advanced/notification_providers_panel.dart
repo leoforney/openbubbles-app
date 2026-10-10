@@ -117,9 +117,9 @@ class _NotificationProvidersState extends OptimizedState<NotificationProvidersPa
                       ]),
                   trailing: const NextButton()
                 ),
-                if (Platform.isAndroid)
+                if (true)
                   const SettingsDivider(),
-                if (Platform.isAndroid)
+                if (true)
                   Obx(() => SettingsSwitch(
                     onChanged: (bool val) async {
                       ss.settings.keepAppAlive.value = val;

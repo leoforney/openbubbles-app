@@ -104,7 +104,7 @@ class _FaceTimePanelState extends OptimizedState<FaceTimePanel> {
           Logger.error("Failed to rotate link", error: e, trace: s);
         });
 
-        if (Platform.isAndroid) {
+        if (true) {
           await mcs.invokeMethod("launch-facetime", {'link': link, 'desc': desc, 'callUuid': session.groupId});
         } else {
           await launchUrl(

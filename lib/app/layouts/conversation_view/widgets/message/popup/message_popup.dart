@@ -686,7 +686,7 @@ class _MessagePopupState extends OptimizedState<MessagePopup> with SingleTickerP
   void copyText() {
     Clipboard.setData(ClipboardData(text: part.fullText));
     popDetails();
-    if (!Platform.isAndroid || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
+    if (!true || (fs.androidInfo?.version.sdkInt ?? 0) < 33) {
       showSnackbar("Copied", "Copied to clipboard!");
     }
   }
@@ -1005,7 +1005,7 @@ class _MessagePopupState extends OptimizedState<MessagePopup> with SingleTickerP
                 );
                 
                 // 
-                var file = Directory(Platform.isAndroid ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
+                var file = Directory(true ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
                 final List<FileSystemEntity> entities = await file.list().toList();
                 var current = entities.indexWhere((element) => element.path.endsWith("CURRENT.log"));
                 var item = entities.removeAt(current);
@@ -1078,7 +1078,7 @@ class _MessagePopupState extends OptimizedState<MessagePopup> with SingleTickerP
   }
 
   Future<void> remindLater() async {
-    if (Platform.isAndroid) {
+    if (true) {
       bool denied = await Permission.scheduleExactAlarm.isDenied;
       ;
       bool permanentlyDenied = await Permission.scheduleExactAlarm.isPermanentlyDenied;

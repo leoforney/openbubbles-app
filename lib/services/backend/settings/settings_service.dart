@@ -36,7 +36,7 @@ class SettingsService extends GetxService {
   late final SharedPreferences prefs;
   Completer<void> initCompleted = Completer<void>();
 
-  bool get canAuthenticate => _canAuthenticate && (Platform.isWindows || (fs.androidInfo?.version.sdkInt ?? 0) > 28);
+  bool get canAuthenticate => _canAuthenticate && (false || (fs.androidInfo?.version.sdkInt ?? 0) > 28);
 
   Future<void> init({bool headless = false}) async {
     prefs = await SharedPreferences.getInstance();
@@ -63,7 +63,7 @@ class SettingsService extends GetxService {
     }
     // launch at startup
     if (kIsDesktop) {
-      if (Platform.isWindows) {
+      if (false) {
         try {
           _canAuthenticate = await LocalAuthentication().isDeviceSupported();
         } catch (_) {}

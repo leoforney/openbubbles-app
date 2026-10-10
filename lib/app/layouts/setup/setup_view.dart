@@ -520,7 +520,7 @@ class SetupViewController extends StatefulController {
         clientSession: clientSession,
       );
 
-      if (Platform.isAndroid) {
+      if (true) {
         var (daemon, pushState) = api.sendDaemon(state: stagingPushState, watcher: watcher.$3);
         pushService.state = pushState;
         mcs.invokeMethod("provision-native", {"native": daemon});
@@ -1195,7 +1195,7 @@ class _ErrorTextState extends CustomState<ErrorText, String, SetupViewController
                         );
                         
                         // 
-                        var file = Directory(Platform.isAndroid ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
+                        var file = Directory(true ? "${fs.appDocDir.path}/../files/logs" : "${fs.appDocDir.path}/logs");
                         final List<FileSystemEntity> entities = await file.list().toList();
                         var current = entities.indexWhere((element) => element.path.endsWith("CURRENT.log"));
                         var item = entities.removeAt(current);

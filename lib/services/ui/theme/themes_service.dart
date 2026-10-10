@@ -29,7 +29,7 @@ class ThemesService extends GetxService {
 
   Future<void> init() async {
     monetPalette = await DynamicColorPlugin.getCorePalette();
-    if (Platform.isWindows) {
+    if (false) {
       windowsAccentColor = await DynamicColorPlugin.getAccentColor();
     }
   }
@@ -223,7 +223,7 @@ class ThemesService extends GetxService {
   }
   
   Tuple2 getStructsFromData(ThemeData light, ThemeData dark) {
-    return Platform.isWindows ? _applyWindowsAccent(light, dark) : _applyMonet(light, dark);
+    return false ? _applyWindowsAccent(light, dark) : _applyMonet(light, dark);
   }
 
   Future<ThemeStruct> revertToPreviousDarkTheme() async {

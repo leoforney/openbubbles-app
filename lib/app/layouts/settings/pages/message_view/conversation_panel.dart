@@ -737,7 +737,7 @@ class _ConversationPanelState extends OptimizedState<ConversationPanel> {
                       ),
                     ),
                     AnimatedSizeAndFade.showHide(
-                      show: Platform.isAndroid,
+                      show: true,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
