@@ -222,7 +222,10 @@ Do not hand-write a small `NativeIncomingMessage` that only holds text plus atta
 Replace FRB's `ptr_to_dart` / `complete_msg` with UniFFI equivalents. Keep the existing `QUEUED_MESSAGES` + re-emit design. Make the methods `async` instead of using `RUNTIME.block_on` from a JNI thread.
 
 ```rust
-#[uniffi::export(async_runtime = "tokio")]
+// Implemented in rust/src/native.rs. Each method body runs via `RUNTIME.spawn(..).await`, so no
+// second tokio runtime is created (avoid `async_runtime = "tokio"`, which brings its own).
+// The real error type is `NativeMsgError`; `send` returns the sent NativeMessageInst.
+#[uniffi::export]
 impl NativePushState {
     /// Returns a mirrored copy of the queued message without removing it.
     pub async fn take_push_message(&self, key: u64) -> Option<NativePushMessage> {
@@ -301,7 +304,7 @@ Remove the planned `reconcileGuid` / `temp-` ➔ `srv-` swapping. Outgoing messa
 | `UnifiedPushReceiver.kt` | UnifiedPush |
 | `SocketIOForegroundService.kt` | Socket.IO (BlueBubbles server mode) |
 
-Decision needed: is BlueBubbles-server mode (FCM / Socket.IO / UnifiedPush) still supported? If yes, it needs its own native port. If no, remove it explicitly instead of leaving it broken.
+**Decision:** BlueBubbles-server mode (FCM / Socket.IO / UnifiedPush) is **dropped**. Those paths are deleted along with `DartWorker`; they are not ported. The full method-by-method list is in `SERVICE_TRANSITION_INVENTORY.md` §4.
 
 ### 6.2 `APNService.receievedMsg`
 ```kotlin
@@ -324,7 +327,7 @@ override fun receievedMsg(msg: ULong, retry: ULong) {
 
 Concurrency: each `receievedMsg` currently launches independently. Process messages **per conversation in order**, for example with a `Mutex` or a single-consumer channel per chat. Otherwise edits/reactions can be applied before their target message has been inserted.
 
-Attachments: incoming attachments need an MMCS download through `download_attachment`. Follow the current Dart behaviour (auto-download settings, size limits). Download *after* the message row is saved, so a slow download never blocks persistence or the notification.
+Attachments: Dart never downloads during push handling. It stores the rustpush `Attachment` as plist XML in `metadata.rustpush` and downloads lazily (`autoDownload` / `onlyWifiDownload`). The native port stores the same metadata, then either downloads lazily through `download_attachment` or does an auto-download *after* the message row is saved. A slow download must never block persistence or the notification.
 
 ### 6.3 Notifications
 Reuse the existing native notification code (`CreateIncomingMessageNotification.kt`, `InternalIntentReceiver.kt` for reply/mark-read, `PushShareTargetsHandler.kt` for shortcuts) and call it directly, instead of writing a parallel `NativeNotificationManager`. The logic currently in Dart `MessageHelper.handleNotification` (mute, filtering unknown senders, group naming, reactions text, quiet delivery, Focus/zen) must be ported. Notification taps and replies should open whichever UI is the current launcher.
@@ -411,15 +414,16 @@ Only after Compose covers every feature the Flutter UI provides:
 ## 11. Execution Roadmap & Checklist
 
 ### Milestone 0: Baseline
-- [ ] Benchmarks (cold push ➔ notification, background RSS, APK size).
-- [ ] Full inventory of `rustpush_service.dart` message handling and `DartWorker` callers.
-- [ ] ObjectBox native versions aligned between Flutter and Gradle.
+- [ ] Benchmarks (cold push ➔ notification, background RSS, APK size). *Needs a physical device; not done yet.*
+- [x] Full inventory of `rustpush_service.dart` message handling and `DartWorker` callers → `SERVICE_TRANSITION_INVENTORY.md`.
+- [x] ObjectBox native versions aligned between Flutter and Gradle (`objectboxVersion = '4.0.3'`, also used for `objectbox-kotlin`).
 
 ### Milestone 1: UniFFI Expansion (FRB untouched)
-- [ ] UniFFI mirrors for `MessageInst` / `Message` / `ConversationData` / attachments.
-- [ ] `take_push_message`, `complete_msg`, `send`, `download_attachment`, `upload_attachment` exported (async, typed errors).
-- [ ] Regenerate bindings with `./gradlew rustUniffiKotlin`.
-- **Acceptance:** Kotlin unit/instrumented tests can round-trip a `MessageInst` through the mirrors, and Flutter continues to work unchanged.
+- [x] UniFFI mirrors for `MessageInst` / `Message` / `ConversationData` / attachments (`rust/src/native_types.rs`). Deep types (extension apps, link meta, profiles, transcript backgrounds) are opaque objects with getters.
+- [x] Exported on `NativePushState` (`rust/src/native.rs`): `take_push_message`, `complete_msg`, `send`, `get_handles`, `get_my_phone_handles`, `download_attachment`, `download_mmcs`, `upload_attachment`. Also the free function `new_message_inst`. All are async on the shared `RUNTIME`, with the typed error `NativeMsgError` (Kotlin `NativeMsgException.Retryable/Permanent/Invalid`).
+- [x] Regenerate bindings with `./gradlew rustUniffiKotlin`.
+- **Acceptance:** Rust unit tests round-trip `MessageInst` through the mirrors (`cargo test --lib native_types`). `:app:compileProdDebugKotlin` builds against the new bindings. Nothing calls the new API yet, so Flutter behaviour is unchanged.
+- Still to add when Milestone 3 needs them: `certify_delivery`, `convert_token_to_uuid`, `fetch_profile`, `parse_transcript_poster`, validate targets.
 
 ### Milestone 2: Native Data Layer
 - [ ] Entities moved to `com.bluebubbles.messaging.objectbox`, with UIDs verified against `lib/objectbox-model.json`.

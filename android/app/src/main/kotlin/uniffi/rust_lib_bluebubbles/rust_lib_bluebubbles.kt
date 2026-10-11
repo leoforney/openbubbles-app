@@ -31,6 +31,13 @@ import java.nio.charset.CodingErrorAction
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -723,6 +730,9 @@ internal interface UniffiCallbackInterfaceNativeKeystoreMethod11 : com.sun.jna.C
 internal interface UniffiCallbackInterfaceNativeKeystoreMethod12 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`alias`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,`uniffiOutReturn`: RustBuffer,uniffiCallStatus: UniffiRustCallStatus,)
 }
+internal interface UniffiCallbackInterfaceNativeProgressCallbackMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`progress`: Long,`total`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfaceRetrieveKeysCallbackMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`passwords`: RustBuffer.ByValue,`passkeys`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -885,6 +895,22 @@ internal open class UniffiVTableCallbackInterfaceNativeKeystore(
         `derive` = other.`derive`
         `encrypt` = other.`encrypt`
         `decrypt` = other.`decrypt`
+        `uniffiFree` = other.`uniffiFree`
+    }
+
+}
+@Structure.FieldOrder("onProgress", "uniffiFree")
+internal open class UniffiVTableCallbackInterfaceNativeProgressCallback(
+    @JvmField internal var `onProgress`: UniffiCallbackInterfaceNativeProgressCallbackMethod0? = null,
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+) : Structure() {
+    class UniffiByValue(
+        `onProgress`: UniffiCallbackInterfaceNativeProgressCallbackMethod0? = null,
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    ): UniffiVTableCallbackInterfaceNativeProgressCallback(`onProgress`,`uniffiFree`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceNativeProgressCallback) {
+        `onProgress` = other.`onProgress`
         `uniffiFree` = other.`uniffiFree`
     }
 
@@ -1096,6 +1122,79 @@ internal open class UniffiVTableCallbackInterfaceSpecialAppleAuthCallback(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -1120,6 +1219,8 @@ fun uniffi_rust_lib_bluebubbles_checksum_func_get_carrier(
 fun uniffi_rust_lib_bluebubbles_checksum_func_init_native(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_is_locked(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_func_new_message_inst(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_recover_keychain(
 ): Short
@@ -1147,6 +1248,24 @@ fun uniffi_rust_lib_bluebubbles_checksum_method_msgreceiver_twofa_event(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_msgreceiver_finish(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_app_id(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_icon(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_is_live(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_ld_text(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_session(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_url(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_bundle_id(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_has_balloon(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_name(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_supports_import(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_create_key(
@@ -1173,13 +1292,35 @@ fun uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_encrypt(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_decrypt(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_attachments(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_original_url(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_summary(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_title(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_url(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeprogresscallback_on_progress(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_complete_msg(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_decline_facetime(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_do_special_apple_auth(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_download_attachment(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_download_mmcs(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_auth_code(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_available_groups(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_handles(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_my_phone_handles(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_site_config(
 ): Short
@@ -1191,9 +1332,29 @@ fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_keychain_passwor
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_publish_status(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_send(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_start_loop(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_take_push_message(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_teardown_2fa(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_upload_attachment(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_cloud_kit_decryption_record_key(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_cloud_kit_record_key(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_has_poster(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_chat_id(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_file(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_is_remove(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_version(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_retrievekeyscallback_keys(
 ): Short
@@ -1244,6 +1405,7 @@ internal interface UniffiLib : Library {
             uniffiCallbackInterfaceKotlinFilePackager.register(lib)
             uniffiCallbackInterfaceMsgReceiver.register(lib)
             uniffiCallbackInterfaceNativeKeystore.register(lib)
+            uniffiCallbackInterfaceNativeProgressCallback.register(lib)
             uniffiCallbackInterfaceRetrieveKeysCallback.register(lib)
             uniffiCallbackInterfaceSpecialAppleAuthCallback.register(lib)
             // Loading of library with integrity check done.
@@ -1313,6 +1475,28 @@ fun uniffi_rust_lib_bluebubbles_fn_method_msgreceiver_twofa_event(`ptr`: Pointer
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_msgreceiver_finish(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_clone_nativeextensionapp(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
+fun uniffi_rust_lib_bluebubbles_fn_free_nativeextensionapp(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_app_id(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_icon(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_is_live(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_ld_text(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_session(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_bundle_id(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_has_balloon(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_name(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_clone_nativekeystore(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_free_nativekeystore(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -1345,18 +1529,50 @@ fun uniffi_rust_lib_bluebubbles_fn_method_nativekeystore_encrypt(`ptr`: Pointer,
 ): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_method_nativekeystore_decrypt(`ptr`: Pointer,`alias`: RustBuffer.ByValue,`ciphertext`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_clone_nativelinkmeta(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
+fun uniffi_rust_lib_bluebubbles_fn_free_nativelinkmeta(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_attachments(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_original_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_summary(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_title(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_clone_nativeprogresscallback(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
+fun uniffi_rust_lib_bluebubbles_fn_free_nativeprogresscallback(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_init_callback_vtable_nativeprogresscallback(`vtable`: UniffiVTableCallbackInterfaceNativeProgressCallback,
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeprogresscallback_on_progress(`ptr`: Pointer,`progress`: Long,`total`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 fun uniffi_rust_lib_bluebubbles_fn_clone_nativepushstate(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_free_nativepushstate(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_complete_msg(`ptr`: Pointer,`key`: Long,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_decline_facetime(`ptr`: Pointer,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_do_special_apple_auth(`ptr`: Pointer,`clientDataHash`: RustBuffer.ByValue,`callback`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_download_attachment(`ptr`: Pointer,`attachment`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,`progress`: Pointer,
+): Long
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_download_mmcs(`ptr`: Pointer,`file`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,`progress`: Pointer,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_auth_code(`ptr`: Pointer,`txnid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Int
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_available_groups(`ptr`: Pointer,`groupsCallback`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_handles(`ptr`: Pointer,
+): Long
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_my_phone_handles(`ptr`: Pointer,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_site_config(`ptr`: Pointer,`site`: RustBuffer.ByValue,`callback`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_state(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -1367,10 +1583,38 @@ fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_keychain_password_inse
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_publish_status(`ptr`: Pointer,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_send(`ptr`: Pointer,`msg`: RustBuffer.ByValue,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_start_loop(`ptr`: Pointer,`handler`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_take_push_message(`ptr`: Pointer,`key`: Long,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_teardown_2fa(`ptr`: Pointer,`action`: RustBuffer.ByValue,`txnid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_upload_attachment(`ptr`: Pointer,`path`: RustBuffer.ByValue,`mime`: RustBuffer.ByValue,`uti`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`progress`: Pointer,
+): Long
+fun uniffi_rust_lib_bluebubbles_fn_clone_nativeshareprofile(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
+fun uniffi_rust_lib_bluebubbles_fn_free_nativeshareprofile(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_cloud_kit_decryption_record_key(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_cloud_kit_record_key(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_has_poster(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+fun uniffi_rust_lib_bluebubbles_fn_clone_nativetranscriptbackground(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
+fun uniffi_rust_lib_bluebubbles_fn_free_nativetranscriptbackground(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_chat_id(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_file(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_is_remove(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+fun uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_version(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_clone_retrievekeyscallback(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_free_retrievekeyscallback(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -1397,6 +1641,8 @@ fun uniffi_rust_lib_bluebubbles_fn_func_init_native(`dir`: RustBuffer.ByValue,`h
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_func_is_locked(uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+fun uniffi_rust_lib_bluebubbles_fn_func_new_message_inst(`conversation`: RustBuffer.ByValue,`sender`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_func_recover_keychain(uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_func_setup_keystore(`dir`: RustBuffer.ByValue,`keystore`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -1545,6 +1791,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_is_locked() != 51144.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_func_new_message_inst() != 65099.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_recover_keychain() != 40899.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1582,6 +1831,33 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_msgreceiver_finish() != 11980.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_app_id() != 15234.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_icon() != 38441.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_is_live() != 46759.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_ld_text() != 50588.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_session() != 6281.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_balloon_url() != 39908.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_bundle_id() != 61867.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_has_balloon() != 44172.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeextensionapp_name() != 4405.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_supports_import() != 18551.toShort()) {
@@ -1623,16 +1899,49 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_decrypt() != 31689.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_attachments() != 42763.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_original_url() != 5315.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_summary() != 54114.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_title() != 3478.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_url() != 991.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeprogresscallback_on_progress() != 61330.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_complete_msg() != 497.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_decline_facetime() != 51777.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_do_special_apple_auth() != 60368.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_download_attachment() != 17047.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_download_mmcs() != 33887.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_auth_code() != 63817.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_available_groups() != 36969.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_handles() != 44736.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_my_phone_handles() != 55976.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_get_site_config() != 18452.toShort()) {
@@ -1650,10 +1959,40 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_publish_status() != 57426.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_send() != 53004.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_start_loop() != 19847.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_take_push_message() != 64349.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_teardown_2fa() != 59540.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_upload_attachment() != 13358.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_cloud_kit_decryption_record_key() != 10100.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_cloud_kit_record_key() != 43595.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeshareprofile_has_poster() != 23092.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_chat_id() != 18945.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_file() != 44227.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_is_remove() != 414.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativetranscriptbackground_version() != 39096.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_retrievekeyscallback_keys() != 62637.toShort()) {
@@ -1672,6 +2011,46 @@ public fun uniffiEnsureInitialized() {
 }
 
 // Async support
+// Async return type handlers
+
+internal const val UNIFFI_RUST_FUTURE_POLL_READY = 0.toByte()
+internal const val UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1.toByte()
+
+internal val uniffiContinuationHandleMap = UniffiHandleMap<CancellableContinuation<Byte>>()
+
+// FFI type for Rust future continuations
+internal object uniffiRustFutureContinuationCallbackImpl: UniffiRustFutureContinuationCallback {
+    override fun callback(data: Long, pollResult: Byte) {
+        uniffiContinuationHandleMap.remove(data).resume(pollResult)
+    }
+}
+
+internal suspend fun<T, F, E: kotlin.Exception> uniffiRustCallAsync(
+    rustFuture: Long,
+    pollFunc: (Long, UniffiRustFutureContinuationCallback, Long) -> Unit,
+    completeFunc: (Long, UniffiRustCallStatus) -> F,
+    freeFunc: (Long) -> Unit,
+    liftFunc: (F) -> T,
+    errorHandler: UniffiRustCallStatusErrorHandler<E>
+): T {
+    try {
+        do {
+            val pollResult = suspendCancellableCoroutine<Byte> { continuation ->
+                pollFunc(
+                    rustFuture,
+                    uniffiRustFutureContinuationCallbackImpl,
+                    uniffiContinuationHandleMap.insert(continuation)
+                )
+            }
+        } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
+
+        return liftFunc(
+            uniffiRustCallWithError(errorHandler, { status -> completeFunc(rustFuture, status) })
+        )
+    } finally {
+        freeFunc(rustFuture)
+    }
+}
 
 // Public interface members begin here.
 
@@ -1782,6 +2161,29 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 
     override fun write(value: ULong, buf: ByteBuffer) {
         buf.putLong(value.toLong())
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
+
+    override fun lower(value: Long): Long {
+        return value
+    }
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(value: Long, buf: ByteBuffer) {
+        buf.putLong(value)
     }
 }
 
@@ -3827,6 +4229,354 @@ public object FfiConverterTypeMsgReceiver: FfiConverter<MsgReceiver, Pointer> {
 //
 
 
+public interface NativeExtensionAppInterface {
+    
+    fun `appId`(): kotlin.ULong?
+    
+    fun `balloonIcon`(): kotlin.ByteArray?
+    
+    fun `balloonIsLive`(): kotlin.Boolean
+    
+    fun `balloonLdText`(): kotlin.String?
+    
+    fun `balloonSession`(): kotlin.String?
+    
+    fun `balloonUrl`(): kotlin.String?
+    
+    fun `bundleId`(): kotlin.String
+    
+    fun `hasBalloon`(): kotlin.Boolean
+    
+    fun `name`(): kotlin.String
+    
+    companion object
+}
+
+open class NativeExtensionApp: Disposable, AutoCloseable, NativeExtensionAppInterface
+{
+
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val pointer: Pointer?) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_free_nativeextensionapp(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativeextensionapp(pointer!!, status)
+        }
+    }
+
+    override fun `appId`(): kotlin.ULong? {
+            return FfiConverterOptionalULong.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_app_id(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `balloonIcon`(): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_icon(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `balloonIsLive`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_is_live(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `balloonLdText`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_ld_text(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `balloonSession`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_session(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `balloonUrl`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_balloon_url(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `bundleId`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_bundle_id(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `hasBalloon`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_has_balloon(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `name`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeextensionapp_name(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+    
+    companion object
+    
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeExtensionApp: FfiConverter<NativeExtensionApp, Pointer> {
+
+    override fun lower(value: NativeExtensionApp): Pointer {
+        return value.uniffiClonePointer()
+    }
+
+    override fun lift(value: Pointer): NativeExtensionApp {
+        return NativeExtensionApp(value)
+    }
+
+    override fun read(buf: ByteBuffer): NativeExtensionApp {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: NativeExtensionApp) = 8UL
+
+    override fun write(value: NativeExtensionApp, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
 public interface NativeKeystore {
     
     fun `supportsImport`(): kotlin.Boolean
@@ -4511,15 +5261,599 @@ public object FfiConverterTypeNativeKeystore: FfiConverter<NativeKeystore, Point
 //
 
 
+public interface NativeLinkMetaInterface {
+    
+    fun `attachments`(): List<kotlin.ByteArray>
+    
+    fun `originalUrl`(): kotlin.String?
+    
+    fun `summary`(): kotlin.String?
+    
+    fun `title`(): kotlin.String?
+    
+    fun `url`(): kotlin.String?
+    
+    companion object
+}
+
+open class NativeLinkMeta: Disposable, AutoCloseable, NativeLinkMetaInterface
+{
+
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val pointer: Pointer?) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_free_nativelinkmeta(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativelinkmeta(pointer!!, status)
+        }
+    }
+
+    override fun `attachments`(): List<kotlin.ByteArray> {
+            return FfiConverterSequenceByteArray.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_attachments(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `originalUrl`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_original_url(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `summary`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_summary(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `title`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_title(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `url`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_url(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+    
+    companion object
+    
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeLinkMeta: FfiConverter<NativeLinkMeta, Pointer> {
+
+    override fun lower(value: NativeLinkMeta): Pointer {
+        return value.uniffiClonePointer()
+    }
+
+    override fun lift(value: Pointer): NativeLinkMeta {
+        return NativeLinkMeta(value)
+    }
+
+    override fun read(buf: ByteBuffer): NativeLinkMeta {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: NativeLinkMeta) = 8UL
+
+    override fun write(value: NativeLinkMeta, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+public interface NativeProgressCallback {
+    
+    fun `onProgress`(`progress`: kotlin.ULong, `total`: kotlin.ULong)
+    
+    companion object
+}
+
+open class NativeProgressCallbackImpl: Disposable, AutoCloseable, NativeProgressCallback
+{
+
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val pointer: Pointer?) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_free_nativeprogresscallback(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativeprogresscallback(pointer!!, status)
+        }
+    }
+
+    override fun `onProgress`(`progress`: kotlin.ULong, `total`: kotlin.ULong)
+        = 
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeprogresscallback_on_progress(
+        it, FfiConverterULong.lower(`progress`),FfiConverterULong.lower(`total`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+    
+    companion object
+    
+}
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceNativeProgressCallback {
+    internal object `onProgress`: UniffiCallbackInterfaceNativeProgressCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`progress`: Long,`total`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeNativeProgressCallback.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onProgress`(
+                    FfiConverterULong.lift(`progress`),
+                    FfiConverterULong.lift(`total`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeNativeProgressCallback.handleMap.remove(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceNativeProgressCallback.UniffiByValue(
+        `onProgress`,
+        uniffiFree,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_rust_lib_bluebubbles_fn_init_callback_vtable_nativeprogresscallback(vtable)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeProgressCallback: FfiConverter<NativeProgressCallback, Pointer> {
+    internal val handleMap = UniffiHandleMap<NativeProgressCallback>()
+
+    override fun lower(value: NativeProgressCallback): Pointer {
+        return Pointer(handleMap.insert(value))
+    }
+
+    override fun lift(value: Pointer): NativeProgressCallback {
+        return NativeProgressCallbackImpl(value)
+    }
+
+    override fun read(buf: ByteBuffer): NativeProgressCallback {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: NativeProgressCallback) = 8UL
+
+    override fun write(value: NativeProgressCallback, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
 public interface NativePushStateInterface {
+    
+    /**
+     * Removes a push message from the queue. Only call this once the message has been
+     * durably handled; until then rustpush re-emits it (every 30s, up to 5 times).
+     */
+    suspend fun `completeMsg`(`key`: kotlin.ULong)
     
     fun `declineFacetime`(`guid`: kotlin.String)
     
     fun `doSpecialAppleAuth`(`clientDataHash`: kotlin.String, `callback`: SpecialAppleAuthCallback)
     
+    /**
+     * Downloads an attachment to `path`. The file only appears at `path` once the
+     * download completed successfully.
+     */
+    suspend fun `downloadAttachment`(`attachment`: NativeAttachment, `path`: kotlin.String, `progress`: NativeProgressCallback)
+    
+    /**
+     * Downloads a bare MMCS file (group icons, transcript backgrounds) to `path`.
+     */
+    suspend fun `downloadMmcs`(`file`: NativeMmcsFile, `path`: kotlin.String, `progress`: NativeProgressCallback)
+    
     fun `getAuthCode`(`txnid`: kotlin.String): kotlin.UInt
     
     fun `getAvailableGroups`(`groupsCallback`: AvailableGroupsCallback)
+    
+    suspend fun `getHandles`(): List<kotlin.String>
+    
+    suspend fun `getMyPhoneHandles`(): List<kotlin.String>
     
     fun `getSiteConfig`(`site`: kotlin.String, `callback`: RetrieveKeysCallback)
     
@@ -4531,9 +5865,32 @@ public interface NativePushStateInterface {
     
     fun `publishStatus`(`guid`: kotlin.String?)
     
+    /**
+     * Sends any message (normal message, reaction, read receipt, typing, edit, unsend, ...)
+     * and waits for delivery confirmation.
+     *
+     * Returns the message as sent: rustpush fills in `sent_timestamp` and, for new
+     * conversations, `conversation.sender_guid`, both of which should be persisted.
+     *
+     * Unlike the FRB `send`, this does not broadcast `PushMessage::SendConfirm`; the
+     * result is returned to the caller directly.
+     */
+    suspend fun `send`(`msg`: NativeMessageInst): NativeMessageInst
+    
     fun `startLoop`(`handler`: MsgReceiver)
     
+    /**
+     * Returns a copy of a queued push message without removing it from the queue.
+     * Returns `None` if the key was already completed or dropped.
+     */
+    suspend fun `takePushMessage`(`key`: kotlin.ULong): NativePushMessage?
+    
     fun `teardown2fa`(`action`: kotlin.String, `txnid`: kotlin.String)
+    
+    /**
+     * Uploads a file to MMCS and returns an attachment ready to be put in a message part.
+     */
+    suspend fun `uploadAttachment`(`path`: kotlin.String, `mime`: kotlin.String, `uti`: kotlin.String, `name`: kotlin.String, `progress`: NativeProgressCallback): NativeAttachment
     
     companion object
 }
@@ -4620,6 +5977,31 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
         }
     }
 
+    
+    /**
+     * Removes a push message from the queue. Only call this once the message has been
+     * durably handled; until then rustpush re-emits it (every 30s, up to 5 times).
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `completeMsg`(`key`: kotlin.ULong) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_complete_msg(
+                thisPtr,
+                FfiConverterULong.lower(`key`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
     override fun `declineFacetime`(`guid`: kotlin.String)
         = 
     callWithPointer {
@@ -4641,6 +6023,57 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
     }
     
     
+
+    
+    /**
+     * Downloads an attachment to `path`. The file only appears at `path` once the
+     * download completed successfully.
+     */
+    @Throws(NativeMsgException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `downloadAttachment`(`attachment`: NativeAttachment, `path`: kotlin.String, `progress`: NativeProgressCallback) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_download_attachment(
+                thisPtr,
+                FfiConverterTypeNativeAttachment.lower(`attachment`),FfiConverterString.lower(`path`),FfiConverterTypeNativeProgressCallback.lower(`progress`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        NativeMsgException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Downloads a bare MMCS file (group icons, transcript backgrounds) to `path`.
+     */
+    @Throws(NativeMsgException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `downloadMmcs`(`file`: NativeMmcsFile, `path`: kotlin.String, `progress`: NativeProgressCallback) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_download_mmcs(
+                thisPtr,
+                FfiConverterTypeNativeMmcsFile.lower(`file`),FfiConverterString.lower(`path`),FfiConverterTypeNativeProgressCallback.lower(`progress`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        NativeMsgException.ErrorHandler,
+    )
+    }
 
     override fun `getAuthCode`(`txnid`: kotlin.String): kotlin.UInt {
             return FfiConverterUInt.lift(
@@ -4664,6 +6097,46 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
     }
     
     
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getHandles`() : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_handles(
+                thisPtr,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getMyPhoneHandles`() : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_get_my_phone_handles(
+                thisPtr,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
     override fun `getSiteConfig`(`site`: kotlin.String, `callback`: RetrieveKeysCallback)
         = 
@@ -4721,6 +6194,37 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
     
     
 
+    
+    /**
+     * Sends any message (normal message, reaction, read receipt, typing, edit, unsend, ...)
+     * and waits for delivery confirmation.
+     *
+     * Returns the message as sent: rustpush fills in `sent_timestamp` and, for new
+     * conversations, `conversation.sender_guid`, both of which should be persisted.
+     *
+     * Unlike the FRB `send`, this does not broadcast `PushMessage::SendConfirm`; the
+     * result is returned to the caller directly.
+     */
+    @Throws(NativeMsgException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `send`(`msg`: NativeMessageInst) : NativeMessageInst {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_send(
+                thisPtr,
+                FfiConverterTypeNativeMessageInst.lower(`msg`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeNativeMessageInst.lift(it) },
+        // Error FFI converter
+        NativeMsgException.ErrorHandler,
+    )
+    }
+
     override fun `startLoop`(`handler`: MsgReceiver)
         = 
     callWithPointer {
@@ -4732,6 +6236,30 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
     
     
 
+    
+    /**
+     * Returns a copy of a queued push message without removing it from the queue.
+     * Returns `None` if the key was already completed or dropped.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `takePushMessage`(`key`: kotlin.ULong) : NativePushMessage? {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_take_push_message(
+                thisPtr,
+                FfiConverterULong.lower(`key`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeNativePushMessage.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
     override fun `teardown2fa`(`action`: kotlin.String, `txnid`: kotlin.String)
         = 
     callWithPointer {
@@ -4742,6 +6270,30 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
     }
     
     
+
+    
+    /**
+     * Uploads a file to MMCS and returns an attachment ready to be put in a message part.
+     */
+    @Throws(NativeMsgException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `uploadAttachment`(`path`: kotlin.String, `mime`: kotlin.String, `uti`: kotlin.String, `name`: kotlin.String, `progress`: NativeProgressCallback) : NativeAttachment {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_upload_attachment(
+                thisPtr,
+                FfiConverterString.lower(`path`),FfiConverterString.lower(`mime`),FfiConverterString.lower(`uti`),FfiConverterString.lower(`name`),FfiConverterTypeNativeProgressCallback.lower(`progress`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeNativeAttachment.lift(it) },
+        // Error FFI converter
+        NativeMsgException.ErrorHandler,
+    )
+    }
 
     
 
@@ -4773,6 +6325,548 @@ public object FfiConverterTypeNativePushState: FfiConverter<NativePushState, Poi
     override fun allocationSize(value: NativePushState) = 8UL
 
     override fun write(value: NativePushState, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+public interface NativeShareProfileInterface {
+    
+    fun `cloudKitDecryptionRecordKey`(): kotlin.ByteArray
+    
+    fun `cloudKitRecordKey`(): kotlin.String
+    
+    fun `hasPoster`(): kotlin.Boolean
+    
+    companion object
+}
+
+open class NativeShareProfile: Disposable, AutoCloseable, NativeShareProfileInterface
+{
+
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val pointer: Pointer?) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_free_nativeshareprofile(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativeshareprofile(pointer!!, status)
+        }
+    }
+
+    override fun `cloudKitDecryptionRecordKey`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_cloud_kit_decryption_record_key(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `cloudKitRecordKey`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_cloud_kit_record_key(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `hasPoster`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativeshareprofile_has_poster(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+    
+    companion object
+    
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeShareProfile: FfiConverter<NativeShareProfile, Pointer> {
+
+    override fun lower(value: NativeShareProfile): Pointer {
+        return value.uniffiClonePointer()
+    }
+
+    override fun lift(value: Pointer): NativeShareProfile {
+        return NativeShareProfile(value)
+    }
+
+    override fun read(buf: ByteBuffer): NativeShareProfile {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: NativeShareProfile) = 8UL
+
+    override fun write(value: NativeShareProfile, buf: ByteBuffer) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+public interface NativeTranscriptBackgroundInterface {
+    
+    fun `chatId`(): kotlin.String?
+    
+    fun `file`(): NativeMmcsFile?
+    
+    fun `isRemove`(): kotlin.Boolean
+    
+    fun `version`(): kotlin.ULong
+    
+    companion object
+}
+
+open class NativeTranscriptBackground: Disposable, AutoCloseable, NativeTranscriptBackgroundInterface
+{
+
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val pointer: Pointer?) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_free_nativetranscriptbackground(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer {
+        return uniffiRustCall() { status ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativetranscriptbackground(pointer!!, status)
+        }
+    }
+
+    override fun `chatId`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_chat_id(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `file`(): NativeMmcsFile? {
+            return FfiConverterOptionalTypeNativeMmcsFile.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_file(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `isRemove`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_is_remove(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `version`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativetranscriptbackground_version(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
+    
+    companion object
+    
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeTranscriptBackground: FfiConverter<NativeTranscriptBackground, Pointer> {
+
+    override fun lower(value: NativeTranscriptBackground): Pointer {
+        return value.uniffiClonePointer()
+    }
+
+    override fun lift(value: Pointer): NativeTranscriptBackground {
+        return NativeTranscriptBackground(value)
+    }
+
+    override fun read(buf: ByteBuffer): NativeTranscriptBackground {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: NativeTranscriptBackground) = 8UL
+
+    override fun write(value: NativeTranscriptBackground, buf: ByteBuffer) {
         // The Rust code always expects pointers written as 8 bytes,
         // and will fail to compile if they don't fit.
         buf.putLong(Pointer.nativeValue(lower(value)))
@@ -5427,6 +7521,567 @@ public object FfiConverterTypeKeystoreAccessRules: FfiConverterRustBuffer<Keysto
 
 
 
+data class NativeAttachment (
+    var `aType`: NativeAttachmentType, 
+    var `part`: kotlin.ULong, 
+    var `utiType`: kotlin.String, 
+    var `mime`: kotlin.String, 
+    var `name`: kotlin.String, 
+    var `iris`: kotlin.Boolean
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeAttachment: FfiConverterRustBuffer<NativeAttachment> {
+    override fun read(buf: ByteBuffer): NativeAttachment {
+        return NativeAttachment(
+            FfiConverterTypeNativeAttachmentType.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeAttachment) = (
+            FfiConverterTypeNativeAttachmentType.allocationSize(value.`aType`) +
+            FfiConverterULong.allocationSize(value.`part`) +
+            FfiConverterString.allocationSize(value.`utiType`) +
+            FfiConverterString.allocationSize(value.`mime`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterBoolean.allocationSize(value.`iris`)
+    )
+
+    override fun write(value: NativeAttachment, buf: ByteBuffer) {
+            FfiConverterTypeNativeAttachmentType.write(value.`aType`, buf)
+            FfiConverterULong.write(value.`part`, buf)
+            FfiConverterString.write(value.`utiType`, buf)
+            FfiConverterString.write(value.`mime`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterBoolean.write(value.`iris`, buf)
+    }
+}
+
+
+
+data class NativeCertifiedContext (
+    var `version`: kotlin.UInt, 
+    var `receipt`: kotlin.ByteArray, 
+    var `sender`: kotlin.String, 
+    var `target`: kotlin.String, 
+    var `uuid`: kotlin.ByteArray, 
+    var `token`: kotlin.ByteArray
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeCertifiedContext: FfiConverterRustBuffer<NativeCertifiedContext> {
+    override fun read(buf: ByteBuffer): NativeCertifiedContext {
+        return NativeCertifiedContext(
+            FfiConverterUInt.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeCertifiedContext) = (
+            FfiConverterUInt.allocationSize(value.`version`) +
+            FfiConverterByteArray.allocationSize(value.`receipt`) +
+            FfiConverterString.allocationSize(value.`sender`) +
+            FfiConverterString.allocationSize(value.`target`) +
+            FfiConverterByteArray.allocationSize(value.`uuid`) +
+            FfiConverterByteArray.allocationSize(value.`token`)
+    )
+
+    override fun write(value: NativeCertifiedContext, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`version`, buf)
+            FfiConverterByteArray.write(value.`receipt`, buf)
+            FfiConverterString.write(value.`sender`, buf)
+            FfiConverterString.write(value.`target`, buf)
+            FfiConverterByteArray.write(value.`uuid`, buf)
+            FfiConverterByteArray.write(value.`token`, buf)
+    }
+}
+
+
+
+data class NativeConversationData (
+    var `participants`: List<kotlin.String>, 
+    var `cvName`: kotlin.String?, 
+    var `senderGuid`: kotlin.String?, 
+    var `afterGuid`: kotlin.String?
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeConversationData: FfiConverterRustBuffer<NativeConversationData> {
+    override fun read(buf: ByteBuffer): NativeConversationData {
+        return NativeConversationData(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeConversationData) = (
+            FfiConverterSequenceString.allocationSize(value.`participants`) +
+            FfiConverterOptionalString.allocationSize(value.`cvName`) +
+            FfiConverterOptionalString.allocationSize(value.`senderGuid`) +
+            FfiConverterOptionalString.allocationSize(value.`afterGuid`)
+    )
+
+    override fun write(value: NativeConversationData, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`participants`, buf)
+            FfiConverterOptionalString.write(value.`cvName`, buf)
+            FfiConverterOptionalString.write(value.`senderGuid`, buf)
+            FfiConverterOptionalString.write(value.`afterGuid`, buf)
+    }
+}
+
+
+
+data class NativeIndexedMessagePart (
+    var `part`: NativeMessagePart, 
+    var `idx`: kotlin.ULong?, 
+    var `ext`: NativePartExtension?
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeIndexedMessagePart: FfiConverterRustBuffer<NativeIndexedMessagePart> {
+    override fun read(buf: ByteBuffer): NativeIndexedMessagePart {
+        return NativeIndexedMessagePart(
+            FfiConverterTypeNativeMessagePart.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalTypeNativePartExtension.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeIndexedMessagePart) = (
+            FfiConverterTypeNativeMessagePart.allocationSize(value.`part`) +
+            FfiConverterOptionalULong.allocationSize(value.`idx`) +
+            FfiConverterOptionalTypeNativePartExtension.allocationSize(value.`ext`)
+    )
+
+    override fun write(value: NativeIndexedMessagePart, buf: ByteBuffer) {
+            FfiConverterTypeNativeMessagePart.write(value.`part`, buf)
+            FfiConverterOptionalULong.write(value.`idx`, buf)
+            FfiConverterOptionalTypeNativePartExtension.write(value.`ext`, buf)
+    }
+}
+
+
+
+data class NativeMessageInst (
+    var `id`: kotlin.String, 
+    var `sender`: kotlin.String?, 
+    var `conversation`: NativeConversationData?, 
+    var `message`: NativeMessage, 
+    var `sentTimestamp`: kotlin.ULong, 
+    var `target`: List<NativeMessageTarget>?, 
+    var `sendDelivered`: kotlin.Boolean, 
+    var `verificationFailed`: kotlin.Boolean, 
+    var `certifiedContext`: NativeCertifiedContext?
+) : Disposable {
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        
+        Disposable.destroy(this.`id`)
+    
+        Disposable.destroy(this.`sender`)
+    
+        Disposable.destroy(this.`conversation`)
+    
+        Disposable.destroy(this.`message`)
+    
+        Disposable.destroy(this.`sentTimestamp`)
+    
+        Disposable.destroy(this.`target`)
+    
+        Disposable.destroy(this.`sendDelivered`)
+    
+        Disposable.destroy(this.`verificationFailed`)
+    
+        Disposable.destroy(this.`certifiedContext`)
+    
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMessageInst: FfiConverterRustBuffer<NativeMessageInst> {
+    override fun read(buf: ByteBuffer): NativeMessageInst {
+        return NativeMessageInst(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalTypeNativeConversationData.read(buf),
+            FfiConverterTypeNativeMessage.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterOptionalSequenceTypeNativeMessageTarget.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalTypeNativeCertifiedContext.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeMessageInst) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterOptionalString.allocationSize(value.`sender`) +
+            FfiConverterOptionalTypeNativeConversationData.allocationSize(value.`conversation`) +
+            FfiConverterTypeNativeMessage.allocationSize(value.`message`) +
+            FfiConverterULong.allocationSize(value.`sentTimestamp`) +
+            FfiConverterOptionalSequenceTypeNativeMessageTarget.allocationSize(value.`target`) +
+            FfiConverterBoolean.allocationSize(value.`sendDelivered`) +
+            FfiConverterBoolean.allocationSize(value.`verificationFailed`) +
+            FfiConverterOptionalTypeNativeCertifiedContext.allocationSize(value.`certifiedContext`)
+    )
+
+    override fun write(value: NativeMessageInst, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterOptionalString.write(value.`sender`, buf)
+            FfiConverterOptionalTypeNativeConversationData.write(value.`conversation`, buf)
+            FfiConverterTypeNativeMessage.write(value.`message`, buf)
+            FfiConverterULong.write(value.`sentTimestamp`, buf)
+            FfiConverterOptionalSequenceTypeNativeMessageTarget.write(value.`target`, buf)
+            FfiConverterBoolean.write(value.`sendDelivered`, buf)
+            FfiConverterBoolean.write(value.`verificationFailed`, buf)
+            FfiConverterOptionalTypeNativeCertifiedContext.write(value.`certifiedContext`, buf)
+    }
+}
+
+
+
+data class NativeMmcsFile (
+    var `signature`: kotlin.ByteArray, 
+    var `objectId`: kotlin.String, 
+    var `url`: kotlin.String, 
+    var `key`: kotlin.ByteArray, 
+    var `size`: kotlin.ULong
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMmcsFile: FfiConverterRustBuffer<NativeMmcsFile> {
+    override fun read(buf: ByteBuffer): NativeMmcsFile {
+        return NativeMmcsFile(
+            FfiConverterByteArray.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeMmcsFile) = (
+            FfiConverterByteArray.allocationSize(value.`signature`) +
+            FfiConverterString.allocationSize(value.`objectId`) +
+            FfiConverterString.allocationSize(value.`url`) +
+            FfiConverterByteArray.allocationSize(value.`key`) +
+            FfiConverterULong.allocationSize(value.`size`)
+    )
+
+    override fun write(value: NativeMmcsFile, buf: ByteBuffer) {
+            FfiConverterByteArray.write(value.`signature`, buf)
+            FfiConverterString.write(value.`objectId`, buf)
+            FfiConverterString.write(value.`url`, buf)
+            FfiConverterByteArray.write(value.`key`, buf)
+            FfiConverterULong.write(value.`size`, buf)
+    }
+}
+
+
+
+data class NativeNormalMessage (
+    var `parts`: List<NativeIndexedMessagePart>, 
+    var `effect`: kotlin.String?, 
+    var `replyGuid`: kotlin.String?, 
+    var `replyPart`: kotlin.String?, 
+    var `service`: NativeMessageType, 
+    var `subject`: kotlin.String?, 
+    var `app`: NativeExtensionApp?, 
+    var `linkMeta`: NativeLinkMeta?, 
+    var `voice`: kotlin.Boolean, 
+    var `scheduled`: NativeScheduleMode?, 
+    var `embeddedProfile`: NativeShareProfile?
+) : Disposable {
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        
+        Disposable.destroy(this.`parts`)
+    
+        Disposable.destroy(this.`effect`)
+    
+        Disposable.destroy(this.`replyGuid`)
+    
+        Disposable.destroy(this.`replyPart`)
+    
+        Disposable.destroy(this.`service`)
+    
+        Disposable.destroy(this.`subject`)
+    
+        Disposable.destroy(this.`app`)
+    
+        Disposable.destroy(this.`linkMeta`)
+    
+        Disposable.destroy(this.`voice`)
+    
+        Disposable.destroy(this.`scheduled`)
+    
+        Disposable.destroy(this.`embeddedProfile`)
+    
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeNormalMessage: FfiConverterRustBuffer<NativeNormalMessage> {
+    override fun read(buf: ByteBuffer): NativeNormalMessage {
+        return NativeNormalMessage(
+            FfiConverterSequenceTypeNativeIndexedMessagePart.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterTypeNativeMessageType.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalTypeNativeExtensionApp.read(buf),
+            FfiConverterOptionalTypeNativeLinkMeta.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalTypeNativeScheduleMode.read(buf),
+            FfiConverterOptionalTypeNativeShareProfile.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeNormalMessage) = (
+            FfiConverterSequenceTypeNativeIndexedMessagePart.allocationSize(value.`parts`) +
+            FfiConverterOptionalString.allocationSize(value.`effect`) +
+            FfiConverterOptionalString.allocationSize(value.`replyGuid`) +
+            FfiConverterOptionalString.allocationSize(value.`replyPart`) +
+            FfiConverterTypeNativeMessageType.allocationSize(value.`service`) +
+            FfiConverterOptionalString.allocationSize(value.`subject`) +
+            FfiConverterOptionalTypeNativeExtensionApp.allocationSize(value.`app`) +
+            FfiConverterOptionalTypeNativeLinkMeta.allocationSize(value.`linkMeta`) +
+            FfiConverterBoolean.allocationSize(value.`voice`) +
+            FfiConverterOptionalTypeNativeScheduleMode.allocationSize(value.`scheduled`) +
+            FfiConverterOptionalTypeNativeShareProfile.allocationSize(value.`embeddedProfile`)
+    )
+
+    override fun write(value: NativeNormalMessage, buf: ByteBuffer) {
+            FfiConverterSequenceTypeNativeIndexedMessagePart.write(value.`parts`, buf)
+            FfiConverterOptionalString.write(value.`effect`, buf)
+            FfiConverterOptionalString.write(value.`replyGuid`, buf)
+            FfiConverterOptionalString.write(value.`replyPart`, buf)
+            FfiConverterTypeNativeMessageType.write(value.`service`, buf)
+            FfiConverterOptionalString.write(value.`subject`, buf)
+            FfiConverterOptionalTypeNativeExtensionApp.write(value.`app`, buf)
+            FfiConverterOptionalTypeNativeLinkMeta.write(value.`linkMeta`, buf)
+            FfiConverterBoolean.write(value.`voice`, buf)
+            FfiConverterOptionalTypeNativeScheduleMode.write(value.`scheduled`, buf)
+            FfiConverterOptionalTypeNativeShareProfile.write(value.`embeddedProfile`, buf)
+    }
+}
+
+
+
+data class NativeOperatedChat (
+    var `participants`: List<kotlin.String>, 
+    var `groupId`: kotlin.String, 
+    var `guid`: kotlin.String, 
+    var `deleteIncomingMessages`: kotlin.Boolean?, 
+    var `wasReportedAsJunk`: kotlin.Boolean?
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeOperatedChat: FfiConverterRustBuffer<NativeOperatedChat> {
+    override fun read(buf: ByteBuffer): NativeOperatedChat {
+        return NativeOperatedChat(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalBoolean.read(buf),
+            FfiConverterOptionalBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeOperatedChat) = (
+            FfiConverterSequenceString.allocationSize(value.`participants`) +
+            FfiConverterString.allocationSize(value.`groupId`) +
+            FfiConverterString.allocationSize(value.`guid`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`deleteIncomingMessages`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`wasReportedAsJunk`)
+    )
+
+    override fun write(value: NativeOperatedChat, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`participants`, buf)
+            FfiConverterString.write(value.`groupId`, buf)
+            FfiConverterString.write(value.`guid`, buf)
+            FfiConverterOptionalBoolean.write(value.`deleteIncomingMessages`, buf)
+            FfiConverterOptionalBoolean.write(value.`wasReportedAsJunk`, buf)
+    }
+}
+
+
+
+data class NativeReactMessage (
+    var `toUuid`: kotlin.String, 
+    var `toPart`: kotlin.ULong?, 
+    var `reaction`: NativeReactMessageType, 
+    var `toText`: kotlin.String, 
+    var `embeddedProfile`: NativeShareProfile?
+) : Disposable {
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        
+        Disposable.destroy(this.`toUuid`)
+    
+        Disposable.destroy(this.`toPart`)
+    
+        Disposable.destroy(this.`reaction`)
+    
+        Disposable.destroy(this.`toText`)
+    
+        Disposable.destroy(this.`embeddedProfile`)
+    
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeReactMessage: FfiConverterRustBuffer<NativeReactMessage> {
+    override fun read(buf: ByteBuffer): NativeReactMessage {
+        return NativeReactMessage(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterTypeNativeReactMessageType.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalTypeNativeShareProfile.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeReactMessage) = (
+            FfiConverterString.allocationSize(value.`toUuid`) +
+            FfiConverterOptionalULong.allocationSize(value.`toPart`) +
+            FfiConverterTypeNativeReactMessageType.allocationSize(value.`reaction`) +
+            FfiConverterString.allocationSize(value.`toText`) +
+            FfiConverterOptionalTypeNativeShareProfile.allocationSize(value.`embeddedProfile`)
+    )
+
+    override fun write(value: NativeReactMessage, buf: ByteBuffer) {
+            FfiConverterString.write(value.`toUuid`, buf)
+            FfiConverterOptionalULong.write(value.`toPart`, buf)
+            FfiConverterTypeNativeReactMessageType.write(value.`reaction`, buf)
+            FfiConverterString.write(value.`toText`, buf)
+            FfiConverterOptionalTypeNativeShareProfile.write(value.`embeddedProfile`, buf)
+    }
+}
+
+
+
+data class NativeScheduleMode (
+    var `ms`: kotlin.ULong, 
+    var `schedule`: kotlin.Boolean
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeScheduleMode: FfiConverterRustBuffer<NativeScheduleMode> {
+    override fun read(buf: ByteBuffer): NativeScheduleMode {
+        return NativeScheduleMode(
+            FfiConverterULong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeScheduleMode) = (
+            FfiConverterULong.allocationSize(value.`ms`) +
+            FfiConverterBoolean.allocationSize(value.`schedule`)
+    )
+
+    override fun write(value: NativeScheduleMode, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`ms`, buf)
+            FfiConverterBoolean.write(value.`schedule`, buf)
+    }
+}
+
+
+
+data class NativeTypingApp (
+    var `bundleId`: kotlin.String, 
+    var `icon`: kotlin.ByteArray
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeTypingApp: FfiConverterRustBuffer<NativeTypingApp> {
+    override fun read(buf: ByteBuffer): NativeTypingApp {
+        return NativeTypingApp(
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeTypingApp) = (
+            FfiConverterString.allocationSize(value.`bundleId`) +
+            FfiConverterByteArray.allocationSize(value.`icon`)
+    )
+
+    override fun write(value: NativeTypingApp, buf: ByteBuffer) {
+            FfiConverterString.write(value.`bundleId`, buf)
+            FfiConverterByteArray.write(value.`icon`, buf)
+    }
+}
+
+
+
 data class SavedPasskey (
     var `credId`: kotlin.String, 
     var `id`: kotlin.ByteArray, 
@@ -5804,6 +8459,146 @@ public object FfiConverterTypeKeystorePadding : FfiConverterRustBuffer<KeystoreP
 
 
 
+sealed class NativeAttachmentType {
+    
+    data class Inline(
+        val `data`: kotlin.ByteArray) : NativeAttachmentType() {
+        companion object
+    }
+    
+    data class Mmcs(
+        val `file`: NativeMmcsFile) : NativeAttachmentType() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeAttachmentType : FfiConverterRustBuffer<NativeAttachmentType>{
+    override fun read(buf: ByteBuffer): NativeAttachmentType {
+        return when(buf.getInt()) {
+            1 -> NativeAttachmentType.Inline(
+                FfiConverterByteArray.read(buf),
+                )
+            2 -> NativeAttachmentType.Mmcs(
+                FfiConverterTypeNativeMmcsFile.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeAttachmentType) = when(value) {
+        is NativeAttachmentType.Inline -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`data`)
+            )
+        }
+        is NativeAttachmentType.Mmcs -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeMmcsFile.allocationSize(value.`file`)
+            )
+        }
+    }
+
+    override fun write(value: NativeAttachmentType, buf: ByteBuffer) {
+        when(value) {
+            is NativeAttachmentType.Inline -> {
+                buf.putInt(1)
+                FfiConverterByteArray.write(value.`data`, buf)
+                Unit
+            }
+            is NativeAttachmentType.Mmcs -> {
+                buf.putInt(2)
+                FfiConverterTypeNativeMmcsFile.write(value.`file`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeDeleteTarget {
+    
+    data class Chat(
+        val `chat`: NativeOperatedChat) : NativeDeleteTarget() {
+        companion object
+    }
+    
+    data class Messages(
+        val `guids`: List<kotlin.String>) : NativeDeleteTarget() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeDeleteTarget : FfiConverterRustBuffer<NativeDeleteTarget>{
+    override fun read(buf: ByteBuffer): NativeDeleteTarget {
+        return when(buf.getInt()) {
+            1 -> NativeDeleteTarget.Chat(
+                FfiConverterTypeNativeOperatedChat.read(buf),
+                )
+            2 -> NativeDeleteTarget.Messages(
+                FfiConverterSequenceString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeDeleteTarget) = when(value) {
+        is NativeDeleteTarget.Chat -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeOperatedChat.allocationSize(value.`chat`)
+            )
+        }
+        is NativeDeleteTarget.Messages -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterSequenceString.allocationSize(value.`guids`)
+            )
+        }
+    }
+
+    override fun write(value: NativeDeleteTarget, buf: ByteBuffer) {
+        when(value) {
+            is NativeDeleteTarget.Chat -> {
+                buf.putInt(1)
+                FfiConverterTypeNativeOperatedChat.write(value.`chat`, buf)
+                Unit
+            }
+            is NativeDeleteTarget.Messages -> {
+                buf.putInt(2)
+                FfiConverterSequenceString.write(value.`guids`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
 
 
 sealed class NativeKeystoreException: kotlin.Exception() {
@@ -5860,6 +8655,1712 @@ public object FfiConverterTypeNativeKeystoreError : FfiConverterRustBuffer<Nativ
     }
 
 }
+
+
+
+sealed class NativeMessage: Disposable  {
+    
+    data class Message(
+        val `msg`: NativeNormalMessage) : NativeMessage() {
+        companion object
+    }
+    
+    data class RenameMessage(
+        val `newName`: kotlin.String) : NativeMessage() {
+        companion object
+    }
+    
+    data class ChangeParticipants(
+        val `newParticipants`: List<kotlin.String>, 
+        val `groupVersion`: kotlin.ULong) : NativeMessage() {
+        companion object
+    }
+    
+    data class React(
+        val `msg`: NativeReactMessage) : NativeMessage() {
+        companion object
+    }
+    
+    object Delivered : NativeMessage()
+    
+    
+    object Read : NativeMessage()
+    
+    
+    data class Typing(
+        val `typing`: kotlin.Boolean, 
+        val `app`: NativeTypingApp?) : NativeMessage() {
+        companion object
+    }
+    
+    data class Unsend(
+        val `tuuid`: kotlin.String, 
+        val `editPart`: kotlin.ULong) : NativeMessage() {
+        companion object
+    }
+    
+    data class Edit(
+        val `tuuid`: kotlin.String, 
+        val `editPart`: kotlin.ULong, 
+        val `newParts`: List<NativeIndexedMessagePart>) : NativeMessage() {
+        companion object
+    }
+    
+    data class IconChange(
+        val `file`: NativeMmcsFile?, 
+        val `groupVersion`: kotlin.ULong) : NativeMessage() {
+        companion object
+    }
+    
+    data class EnableSmsActivation(
+        val `enabled`: kotlin.Boolean) : NativeMessage() {
+        companion object
+    }
+    
+    object MessageReadOnDevice : NativeMessage()
+    
+    
+    data class SmsConfirmSent(
+        val `status`: kotlin.Boolean) : NativeMessage() {
+        companion object
+    }
+    
+    object MarkUnread : NativeMessage()
+    
+    
+    object PeerCacheInvalidate : NativeMessage()
+    
+    
+    data class UpdateExtension(
+        val `forUuid`: kotlin.String, 
+        val `ext`: NativePartExtension) : NativeMessage() {
+        companion object
+    }
+    
+    data class Error(
+        val `forUuid`: kotlin.String, 
+        val `status`: kotlin.ULong, 
+        val `statusStr`: kotlin.String) : NativeMessage() {
+        companion object
+    }
+    
+    data class MoveToRecycleBin(
+        val `target`: NativeDeleteTarget, 
+        val `recoverableDeleteDate`: kotlin.ULong) : NativeMessage() {
+        companion object
+    }
+    
+    data class RecoverChat(
+        val `chat`: NativeOperatedChat) : NativeMessage() {
+        companion object
+    }
+    
+    data class PermanentDelete(
+        val `target`: NativeDeleteTarget, 
+        val `isScheduled`: kotlin.Boolean) : NativeMessage() {
+        companion object
+    }
+    
+    object Unschedule : NativeMessage()
+    
+    
+    data class UpdateProfile(
+        val `profile`: NativeShareProfile?, 
+        val `shareContacts`: kotlin.Boolean) : NativeMessage() {
+        companion object
+    }
+    
+    data class UpdateProfileSharing(
+        val `sharedDismissed`: List<kotlin.String>, 
+        val `sharedAll`: List<kotlin.String>, 
+        val `version`: kotlin.ULong) : NativeMessage() {
+        companion object
+    }
+    
+    data class ShareProfile(
+        val `profile`: NativeShareProfile) : NativeMessage() {
+        companion object
+    }
+    
+    object NotifyAnyways : NativeMessage()
+    
+    
+    data class SetTranscriptBackground(
+        val `background`: NativeTranscriptBackground) : NativeMessage() {
+        companion object
+    }
+    
+
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        when(this) {
+            is NativeMessage.Message -> {
+                
+        Disposable.destroy(this.`msg`)
+    
+                
+            }
+            is NativeMessage.RenameMessage -> {
+                
+        Disposable.destroy(this.`newName`)
+    
+                
+            }
+            is NativeMessage.ChangeParticipants -> {
+                
+        Disposable.destroy(this.`newParticipants`)
+    
+        Disposable.destroy(this.`groupVersion`)
+    
+                
+            }
+            is NativeMessage.React -> {
+                
+        Disposable.destroy(this.`msg`)
+    
+                
+            }
+            is NativeMessage.Delivered -> {// Nothing to destroy
+            }
+            is NativeMessage.Read -> {// Nothing to destroy
+            }
+            is NativeMessage.Typing -> {
+                
+        Disposable.destroy(this.`typing`)
+    
+        Disposable.destroy(this.`app`)
+    
+                
+            }
+            is NativeMessage.Unsend -> {
+                
+        Disposable.destroy(this.`tuuid`)
+    
+        Disposable.destroy(this.`editPart`)
+    
+                
+            }
+            is NativeMessage.Edit -> {
+                
+        Disposable.destroy(this.`tuuid`)
+    
+        Disposable.destroy(this.`editPart`)
+    
+        Disposable.destroy(this.`newParts`)
+    
+                
+            }
+            is NativeMessage.IconChange -> {
+                
+        Disposable.destroy(this.`file`)
+    
+        Disposable.destroy(this.`groupVersion`)
+    
+                
+            }
+            is NativeMessage.EnableSmsActivation -> {
+                
+        Disposable.destroy(this.`enabled`)
+    
+                
+            }
+            is NativeMessage.MessageReadOnDevice -> {// Nothing to destroy
+            }
+            is NativeMessage.SmsConfirmSent -> {
+                
+        Disposable.destroy(this.`status`)
+    
+                
+            }
+            is NativeMessage.MarkUnread -> {// Nothing to destroy
+            }
+            is NativeMessage.PeerCacheInvalidate -> {// Nothing to destroy
+            }
+            is NativeMessage.UpdateExtension -> {
+                
+        Disposable.destroy(this.`forUuid`)
+    
+        Disposable.destroy(this.`ext`)
+    
+                
+            }
+            is NativeMessage.Error -> {
+                
+        Disposable.destroy(this.`forUuid`)
+    
+        Disposable.destroy(this.`status`)
+    
+        Disposable.destroy(this.`statusStr`)
+    
+                
+            }
+            is NativeMessage.MoveToRecycleBin -> {
+                
+        Disposable.destroy(this.`target`)
+    
+        Disposable.destroy(this.`recoverableDeleteDate`)
+    
+                
+            }
+            is NativeMessage.RecoverChat -> {
+                
+        Disposable.destroy(this.`chat`)
+    
+                
+            }
+            is NativeMessage.PermanentDelete -> {
+                
+        Disposable.destroy(this.`target`)
+    
+        Disposable.destroy(this.`isScheduled`)
+    
+                
+            }
+            is NativeMessage.Unschedule -> {// Nothing to destroy
+            }
+            is NativeMessage.UpdateProfile -> {
+                
+        Disposable.destroy(this.`profile`)
+    
+        Disposable.destroy(this.`shareContacts`)
+    
+                
+            }
+            is NativeMessage.UpdateProfileSharing -> {
+                
+        Disposable.destroy(this.`sharedDismissed`)
+    
+        Disposable.destroy(this.`sharedAll`)
+    
+        Disposable.destroy(this.`version`)
+    
+                
+            }
+            is NativeMessage.ShareProfile -> {
+                
+        Disposable.destroy(this.`profile`)
+    
+                
+            }
+            is NativeMessage.NotifyAnyways -> {// Nothing to destroy
+            }
+            is NativeMessage.SetTranscriptBackground -> {
+                
+        Disposable.destroy(this.`background`)
+    
+                
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMessage : FfiConverterRustBuffer<NativeMessage>{
+    override fun read(buf: ByteBuffer): NativeMessage {
+        return when(buf.getInt()) {
+            1 -> NativeMessage.Message(
+                FfiConverterTypeNativeNormalMessage.read(buf),
+                )
+            2 -> NativeMessage.RenameMessage(
+                FfiConverterString.read(buf),
+                )
+            3 -> NativeMessage.ChangeParticipants(
+                FfiConverterSequenceString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            4 -> NativeMessage.React(
+                FfiConverterTypeNativeReactMessage.read(buf),
+                )
+            5 -> NativeMessage.Delivered
+            6 -> NativeMessage.Read
+            7 -> NativeMessage.Typing(
+                FfiConverterBoolean.read(buf),
+                FfiConverterOptionalTypeNativeTypingApp.read(buf),
+                )
+            8 -> NativeMessage.Unsend(
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            9 -> NativeMessage.Edit(
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterSequenceTypeNativeIndexedMessagePart.read(buf),
+                )
+            10 -> NativeMessage.IconChange(
+                FfiConverterOptionalTypeNativeMmcsFile.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            11 -> NativeMessage.EnableSmsActivation(
+                FfiConverterBoolean.read(buf),
+                )
+            12 -> NativeMessage.MessageReadOnDevice
+            13 -> NativeMessage.SmsConfirmSent(
+                FfiConverterBoolean.read(buf),
+                )
+            14 -> NativeMessage.MarkUnread
+            15 -> NativeMessage.PeerCacheInvalidate
+            16 -> NativeMessage.UpdateExtension(
+                FfiConverterString.read(buf),
+                FfiConverterTypeNativePartExtension.read(buf),
+                )
+            17 -> NativeMessage.Error(
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterString.read(buf),
+                )
+            18 -> NativeMessage.MoveToRecycleBin(
+                FfiConverterTypeNativeDeleteTarget.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            19 -> NativeMessage.RecoverChat(
+                FfiConverterTypeNativeOperatedChat.read(buf),
+                )
+            20 -> NativeMessage.PermanentDelete(
+                FfiConverterTypeNativeDeleteTarget.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            21 -> NativeMessage.Unschedule
+            22 -> NativeMessage.UpdateProfile(
+                FfiConverterOptionalTypeNativeShareProfile.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            23 -> NativeMessage.UpdateProfileSharing(
+                FfiConverterSequenceString.read(buf),
+                FfiConverterSequenceString.read(buf),
+                FfiConverterULong.read(buf),
+                )
+            24 -> NativeMessage.ShareProfile(
+                FfiConverterTypeNativeShareProfile.read(buf),
+                )
+            25 -> NativeMessage.NotifyAnyways
+            26 -> NativeMessage.SetTranscriptBackground(
+                FfiConverterTypeNativeTranscriptBackground.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeMessage) = when(value) {
+        is NativeMessage.Message -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeNormalMessage.allocationSize(value.`msg`)
+            )
+        }
+        is NativeMessage.RenameMessage -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`newName`)
+            )
+        }
+        is NativeMessage.ChangeParticipants -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterSequenceString.allocationSize(value.`newParticipants`)
+                + FfiConverterULong.allocationSize(value.`groupVersion`)
+            )
+        }
+        is NativeMessage.React -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeReactMessage.allocationSize(value.`msg`)
+            )
+        }
+        is NativeMessage.Delivered -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.Read -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.Typing -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`typing`)
+                + FfiConverterOptionalTypeNativeTypingApp.allocationSize(value.`app`)
+            )
+        }
+        is NativeMessage.Unsend -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`tuuid`)
+                + FfiConverterULong.allocationSize(value.`editPart`)
+            )
+        }
+        is NativeMessage.Edit -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`tuuid`)
+                + FfiConverterULong.allocationSize(value.`editPart`)
+                + FfiConverterSequenceTypeNativeIndexedMessagePart.allocationSize(value.`newParts`)
+            )
+        }
+        is NativeMessage.IconChange -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalTypeNativeMmcsFile.allocationSize(value.`file`)
+                + FfiConverterULong.allocationSize(value.`groupVersion`)
+            )
+        }
+        is NativeMessage.EnableSmsActivation -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`enabled`)
+            )
+        }
+        is NativeMessage.MessageReadOnDevice -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.SmsConfirmSent -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`status`)
+            )
+        }
+        is NativeMessage.MarkUnread -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.PeerCacheInvalidate -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.UpdateExtension -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`forUuid`)
+                + FfiConverterTypeNativePartExtension.allocationSize(value.`ext`)
+            )
+        }
+        is NativeMessage.Error -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`forUuid`)
+                + FfiConverterULong.allocationSize(value.`status`)
+                + FfiConverterString.allocationSize(value.`statusStr`)
+            )
+        }
+        is NativeMessage.MoveToRecycleBin -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeDeleteTarget.allocationSize(value.`target`)
+                + FfiConverterULong.allocationSize(value.`recoverableDeleteDate`)
+            )
+        }
+        is NativeMessage.RecoverChat -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeOperatedChat.allocationSize(value.`chat`)
+            )
+        }
+        is NativeMessage.PermanentDelete -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeDeleteTarget.allocationSize(value.`target`)
+                + FfiConverterBoolean.allocationSize(value.`isScheduled`)
+            )
+        }
+        is NativeMessage.Unschedule -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.UpdateProfile -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalTypeNativeShareProfile.allocationSize(value.`profile`)
+                + FfiConverterBoolean.allocationSize(value.`shareContacts`)
+            )
+        }
+        is NativeMessage.UpdateProfileSharing -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterSequenceString.allocationSize(value.`sharedDismissed`)
+                + FfiConverterSequenceString.allocationSize(value.`sharedAll`)
+                + FfiConverterULong.allocationSize(value.`version`)
+            )
+        }
+        is NativeMessage.ShareProfile -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeShareProfile.allocationSize(value.`profile`)
+            )
+        }
+        is NativeMessage.NotifyAnyways -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessage.SetTranscriptBackground -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeTranscriptBackground.allocationSize(value.`background`)
+            )
+        }
+    }
+
+    override fun write(value: NativeMessage, buf: ByteBuffer) {
+        when(value) {
+            is NativeMessage.Message -> {
+                buf.putInt(1)
+                FfiConverterTypeNativeNormalMessage.write(value.`msg`, buf)
+                Unit
+            }
+            is NativeMessage.RenameMessage -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`newName`, buf)
+                Unit
+            }
+            is NativeMessage.ChangeParticipants -> {
+                buf.putInt(3)
+                FfiConverterSequenceString.write(value.`newParticipants`, buf)
+                FfiConverterULong.write(value.`groupVersion`, buf)
+                Unit
+            }
+            is NativeMessage.React -> {
+                buf.putInt(4)
+                FfiConverterTypeNativeReactMessage.write(value.`msg`, buf)
+                Unit
+            }
+            is NativeMessage.Delivered -> {
+                buf.putInt(5)
+                Unit
+            }
+            is NativeMessage.Read -> {
+                buf.putInt(6)
+                Unit
+            }
+            is NativeMessage.Typing -> {
+                buf.putInt(7)
+                FfiConverterBoolean.write(value.`typing`, buf)
+                FfiConverterOptionalTypeNativeTypingApp.write(value.`app`, buf)
+                Unit
+            }
+            is NativeMessage.Unsend -> {
+                buf.putInt(8)
+                FfiConverterString.write(value.`tuuid`, buf)
+                FfiConverterULong.write(value.`editPart`, buf)
+                Unit
+            }
+            is NativeMessage.Edit -> {
+                buf.putInt(9)
+                FfiConverterString.write(value.`tuuid`, buf)
+                FfiConverterULong.write(value.`editPart`, buf)
+                FfiConverterSequenceTypeNativeIndexedMessagePart.write(value.`newParts`, buf)
+                Unit
+            }
+            is NativeMessage.IconChange -> {
+                buf.putInt(10)
+                FfiConverterOptionalTypeNativeMmcsFile.write(value.`file`, buf)
+                FfiConverterULong.write(value.`groupVersion`, buf)
+                Unit
+            }
+            is NativeMessage.EnableSmsActivation -> {
+                buf.putInt(11)
+                FfiConverterBoolean.write(value.`enabled`, buf)
+                Unit
+            }
+            is NativeMessage.MessageReadOnDevice -> {
+                buf.putInt(12)
+                Unit
+            }
+            is NativeMessage.SmsConfirmSent -> {
+                buf.putInt(13)
+                FfiConverterBoolean.write(value.`status`, buf)
+                Unit
+            }
+            is NativeMessage.MarkUnread -> {
+                buf.putInt(14)
+                Unit
+            }
+            is NativeMessage.PeerCacheInvalidate -> {
+                buf.putInt(15)
+                Unit
+            }
+            is NativeMessage.UpdateExtension -> {
+                buf.putInt(16)
+                FfiConverterString.write(value.`forUuid`, buf)
+                FfiConverterTypeNativePartExtension.write(value.`ext`, buf)
+                Unit
+            }
+            is NativeMessage.Error -> {
+                buf.putInt(17)
+                FfiConverterString.write(value.`forUuid`, buf)
+                FfiConverterULong.write(value.`status`, buf)
+                FfiConverterString.write(value.`statusStr`, buf)
+                Unit
+            }
+            is NativeMessage.MoveToRecycleBin -> {
+                buf.putInt(18)
+                FfiConverterTypeNativeDeleteTarget.write(value.`target`, buf)
+                FfiConverterULong.write(value.`recoverableDeleteDate`, buf)
+                Unit
+            }
+            is NativeMessage.RecoverChat -> {
+                buf.putInt(19)
+                FfiConverterTypeNativeOperatedChat.write(value.`chat`, buf)
+                Unit
+            }
+            is NativeMessage.PermanentDelete -> {
+                buf.putInt(20)
+                FfiConverterTypeNativeDeleteTarget.write(value.`target`, buf)
+                FfiConverterBoolean.write(value.`isScheduled`, buf)
+                Unit
+            }
+            is NativeMessage.Unschedule -> {
+                buf.putInt(21)
+                Unit
+            }
+            is NativeMessage.UpdateProfile -> {
+                buf.putInt(22)
+                FfiConverterOptionalTypeNativeShareProfile.write(value.`profile`, buf)
+                FfiConverterBoolean.write(value.`shareContacts`, buf)
+                Unit
+            }
+            is NativeMessage.UpdateProfileSharing -> {
+                buf.putInt(23)
+                FfiConverterSequenceString.write(value.`sharedDismissed`, buf)
+                FfiConverterSequenceString.write(value.`sharedAll`, buf)
+                FfiConverterULong.write(value.`version`, buf)
+                Unit
+            }
+            is NativeMessage.ShareProfile -> {
+                buf.putInt(24)
+                FfiConverterTypeNativeShareProfile.write(value.`profile`, buf)
+                Unit
+            }
+            is NativeMessage.NotifyAnyways -> {
+                buf.putInt(25)
+                Unit
+            }
+            is NativeMessage.SetTranscriptBackground -> {
+                buf.putInt(26)
+                FfiConverterTypeNativeTranscriptBackground.write(value.`background`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeMessagePart {
+    
+    data class Text(
+        val `text`: kotlin.String, 
+        val `format`: NativeTextFormat) : NativeMessagePart() {
+        companion object
+    }
+    
+    data class Attachment(
+        val `attachment`: NativeAttachment) : NativeMessagePart() {
+        companion object
+    }
+    
+    data class Mention(
+        val `uri`: kotlin.String, 
+        val `text`: kotlin.String) : NativeMessagePart() {
+        companion object
+    }
+    
+    data class Object(
+        val `value`: kotlin.String) : NativeMessagePart() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMessagePart : FfiConverterRustBuffer<NativeMessagePart>{
+    override fun read(buf: ByteBuffer): NativeMessagePart {
+        return when(buf.getInt()) {
+            1 -> NativeMessagePart.Text(
+                FfiConverterString.read(buf),
+                FfiConverterTypeNativeTextFormat.read(buf),
+                )
+            2 -> NativeMessagePart.Attachment(
+                FfiConverterTypeNativeAttachment.read(buf),
+                )
+            3 -> NativeMessagePart.Mention(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            4 -> NativeMessagePart.Object(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeMessagePart) = when(value) {
+        is NativeMessagePart.Text -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`text`)
+                + FfiConverterTypeNativeTextFormat.allocationSize(value.`format`)
+            )
+        }
+        is NativeMessagePart.Attachment -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeAttachment.allocationSize(value.`attachment`)
+            )
+        }
+        is NativeMessagePart.Mention -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`uri`)
+                + FfiConverterString.allocationSize(value.`text`)
+            )
+        }
+        is NativeMessagePart.Object -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`value`)
+            )
+        }
+    }
+
+    override fun write(value: NativeMessagePart, buf: ByteBuffer) {
+        when(value) {
+            is NativeMessagePart.Text -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`text`, buf)
+                FfiConverterTypeNativeTextFormat.write(value.`format`, buf)
+                Unit
+            }
+            is NativeMessagePart.Attachment -> {
+                buf.putInt(2)
+                FfiConverterTypeNativeAttachment.write(value.`attachment`, buf)
+                Unit
+            }
+            is NativeMessagePart.Mention -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`uri`, buf)
+                FfiConverterString.write(value.`text`, buf)
+                Unit
+            }
+            is NativeMessagePart.Object -> {
+                buf.putInt(4)
+                FfiConverterString.write(value.`value`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeMessageTarget {
+    
+    data class Token(
+        val `token`: kotlin.ByteArray) : NativeMessageTarget() {
+        companion object
+    }
+    
+    data class Uuid(
+        val `uuid`: kotlin.String) : NativeMessageTarget() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMessageTarget : FfiConverterRustBuffer<NativeMessageTarget>{
+    override fun read(buf: ByteBuffer): NativeMessageTarget {
+        return when(buf.getInt()) {
+            1 -> NativeMessageTarget.Token(
+                FfiConverterByteArray.read(buf),
+                )
+            2 -> NativeMessageTarget.Uuid(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeMessageTarget) = when(value) {
+        is NativeMessageTarget.Token -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterByteArray.allocationSize(value.`token`)
+            )
+        }
+        is NativeMessageTarget.Uuid -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`uuid`)
+            )
+        }
+    }
+
+    override fun write(value: NativeMessageTarget, buf: ByteBuffer) {
+        when(value) {
+            is NativeMessageTarget.Token -> {
+                buf.putInt(1)
+                FfiConverterByteArray.write(value.`token`, buf)
+                Unit
+            }
+            is NativeMessageTarget.Uuid -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`uuid`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeMessageType {
+    
+    object IMessage : NativeMessageType()
+    
+    
+    data class Sms(
+        val `isPhone`: kotlin.Boolean, 
+        val `usingNumber`: kotlin.String, 
+        val `fromHandle`: kotlin.String?) : NativeMessageType() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMessageType : FfiConverterRustBuffer<NativeMessageType>{
+    override fun read(buf: ByteBuffer): NativeMessageType {
+        return when(buf.getInt()) {
+            1 -> NativeMessageType.IMessage
+            2 -> NativeMessageType.Sms(
+                FfiConverterBoolean.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeMessageType) = when(value) {
+        is NativeMessageType.IMessage -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeMessageType.Sms -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`isPhone`)
+                + FfiConverterString.allocationSize(value.`usingNumber`)
+                + FfiConverterOptionalString.allocationSize(value.`fromHandle`)
+            )
+        }
+    }
+
+    override fun write(value: NativeMessageType, buf: ByteBuffer) {
+        when(value) {
+            is NativeMessageType.IMessage -> {
+                buf.putInt(1)
+                Unit
+            }
+            is NativeMessageType.Sms -> {
+                buf.putInt(2)
+                FfiConverterBoolean.write(value.`isPhone`, buf)
+                FfiConverterString.write(value.`usingNumber`, buf)
+                FfiConverterOptionalString.write(value.`fromHandle`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+
+sealed class NativeMsgException: kotlin.Exception() {
+    
+    /**
+     * Transient failure (network, timeout, connection). Safe to retry.
+     */
+    class Retryable(
+        
+        val `msg`: kotlin.String
+        ) : NativeMsgException() {
+        override val message
+            get() = "msg=${ `msg` }"
+    }
+    
+    /**
+     * Permanent failure. Retrying will not help.
+     */
+    class Permanent(
+        
+        val `msg`: kotlin.String
+        ) : NativeMsgException() {
+        override val message
+            get() = "msg=${ `msg` }"
+    }
+    
+    /**
+     * The message passed from Kotlin could not be converted.
+     */
+    class Invalid(
+        
+        val `msg`: kotlin.String
+        ) : NativeMsgException() {
+        override val message
+            get() = "msg=${ `msg` }"
+    }
+    
+
+    companion object ErrorHandler : UniffiRustCallStatusErrorHandler<NativeMsgException> {
+        override fun lift(error_buf: RustBuffer.ByValue): NativeMsgException = FfiConverterTypeNativeMsgError.lift(error_buf)
+    }
+
+    
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeMsgError : FfiConverterRustBuffer<NativeMsgException> {
+    override fun read(buf: ByteBuffer): NativeMsgException {
+        
+
+        return when(buf.getInt()) {
+            1 -> NativeMsgException.Retryable(
+                FfiConverterString.read(buf),
+                )
+            2 -> NativeMsgException.Permanent(
+                FfiConverterString.read(buf),
+                )
+            3 -> NativeMsgException.Invalid(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeMsgException): ULong {
+        return when(value) {
+            is NativeMsgException.Retryable -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`msg`)
+            )
+            is NativeMsgException.Permanent -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`msg`)
+            )
+            is NativeMsgException.Invalid -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+                + FfiConverterString.allocationSize(value.`msg`)
+            )
+        }
+    }
+
+    override fun write(value: NativeMsgException, buf: ByteBuffer) {
+        when(value) {
+            is NativeMsgException.Retryable -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`msg`, buf)
+                Unit
+            }
+            is NativeMsgException.Permanent -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`msg`, buf)
+                Unit
+            }
+            is NativeMsgException.Invalid -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`msg`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+
+}
+
+
+
+sealed class NativePartExtension {
+    
+    data class Sticker(
+        val `msgWidth`: kotlin.Double, 
+        val `rotation`: kotlin.Double, 
+        val `sai`: kotlin.ULong, 
+        val `scale`: kotlin.Double, 
+        val `update`: kotlin.Boolean?, 
+        val `sli`: kotlin.ULong, 
+        val `normalizedX`: kotlin.Double, 
+        val `normalizedY`: kotlin.Double, 
+        val `version`: kotlin.ULong, 
+        val `hash`: kotlin.String, 
+        val `safi`: kotlin.ULong, 
+        val `effectType`: kotlin.Long, 
+        val `stickerId`: kotlin.String) : NativePartExtension() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativePartExtension : FfiConverterRustBuffer<NativePartExtension>{
+    override fun read(buf: ByteBuffer): NativePartExtension {
+        return when(buf.getInt()) {
+            1 -> NativePartExtension.Sticker(
+                FfiConverterDouble.read(buf),
+                FfiConverterDouble.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterDouble.read(buf),
+                FfiConverterOptionalBoolean.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterDouble.read(buf),
+                FfiConverterDouble.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterULong.read(buf),
+                FfiConverterLong.read(buf),
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativePartExtension) = when(value) {
+        is NativePartExtension.Sticker -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterDouble.allocationSize(value.`msgWidth`)
+                + FfiConverterDouble.allocationSize(value.`rotation`)
+                + FfiConverterULong.allocationSize(value.`sai`)
+                + FfiConverterDouble.allocationSize(value.`scale`)
+                + FfiConverterOptionalBoolean.allocationSize(value.`update`)
+                + FfiConverterULong.allocationSize(value.`sli`)
+                + FfiConverterDouble.allocationSize(value.`normalizedX`)
+                + FfiConverterDouble.allocationSize(value.`normalizedY`)
+                + FfiConverterULong.allocationSize(value.`version`)
+                + FfiConverterString.allocationSize(value.`hash`)
+                + FfiConverterULong.allocationSize(value.`safi`)
+                + FfiConverterLong.allocationSize(value.`effectType`)
+                + FfiConverterString.allocationSize(value.`stickerId`)
+            )
+        }
+    }
+
+    override fun write(value: NativePartExtension, buf: ByteBuffer) {
+        when(value) {
+            is NativePartExtension.Sticker -> {
+                buf.putInt(1)
+                FfiConverterDouble.write(value.`msgWidth`, buf)
+                FfiConverterDouble.write(value.`rotation`, buf)
+                FfiConverterULong.write(value.`sai`, buf)
+                FfiConverterDouble.write(value.`scale`, buf)
+                FfiConverterOptionalBoolean.write(value.`update`, buf)
+                FfiConverterULong.write(value.`sli`, buf)
+                FfiConverterDouble.write(value.`normalizedX`, buf)
+                FfiConverterDouble.write(value.`normalizedY`, buf)
+                FfiConverterULong.write(value.`version`, buf)
+                FfiConverterString.write(value.`hash`, buf)
+                FfiConverterULong.write(value.`safi`, buf)
+                FfiConverterLong.write(value.`effectType`, buf)
+                FfiConverterString.write(value.`stickerId`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Top-level push payload delivered through `MsgReceiver.receieved_msg`.
+ *
+ * Variants that only the Flutter UI handles today (photostreams, FaceTime,
+ * StatusKit, IDMS, Find My beacons, registration state) are reported as
+ * `Unhandled` until their native ports land.
+ */
+sealed class NativePushMessage: Disposable  {
+    
+    data class IMessage(
+        val `msg`: NativeMessageInst) : NativePushMessage() {
+        companion object
+    }
+    
+    data class SendConfirm(
+        val `uuid`: kotlin.String, 
+        val `error`: kotlin.String?) : NativePushMessage() {
+        companion object
+    }
+    
+    data class Unhandled(
+        val `kind`: kotlin.String) : NativePushMessage() {
+        companion object
+    }
+    
+
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        when(this) {
+            is NativePushMessage.IMessage -> {
+                
+        Disposable.destroy(this.`msg`)
+    
+                
+            }
+            is NativePushMessage.SendConfirm -> {
+                
+        Disposable.destroy(this.`uuid`)
+    
+        Disposable.destroy(this.`error`)
+    
+                
+            }
+            is NativePushMessage.Unhandled -> {
+                
+        Disposable.destroy(this.`kind`)
+    
+                
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativePushMessage : FfiConverterRustBuffer<NativePushMessage>{
+    override fun read(buf: ByteBuffer): NativePushMessage {
+        return when(buf.getInt()) {
+            1 -> NativePushMessage.IMessage(
+                FfiConverterTypeNativeMessageInst.read(buf),
+                )
+            2 -> NativePushMessage.SendConfirm(
+                FfiConverterString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                )
+            3 -> NativePushMessage.Unhandled(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativePushMessage) = when(value) {
+        is NativePushMessage.IMessage -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeMessageInst.allocationSize(value.`msg`)
+            )
+        }
+        is NativePushMessage.SendConfirm -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`uuid`)
+                + FfiConverterOptionalString.allocationSize(value.`error`)
+            )
+        }
+        is NativePushMessage.Unhandled -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`kind`)
+            )
+        }
+    }
+
+    override fun write(value: NativePushMessage, buf: ByteBuffer) {
+        when(value) {
+            is NativePushMessage.IMessage -> {
+                buf.putInt(1)
+                FfiConverterTypeNativeMessageInst.write(value.`msg`, buf)
+                Unit
+            }
+            is NativePushMessage.SendConfirm -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`uuid`, buf)
+                FfiConverterOptionalString.write(value.`error`, buf)
+                Unit
+            }
+            is NativePushMessage.Unhandled -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`kind`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeReactMessageType: Disposable  {
+    
+    data class React(
+        val `reaction`: NativeReaction, 
+        val `enable`: kotlin.Boolean) : NativeReactMessageType() {
+        companion object
+    }
+    
+    data class Extension(
+        val `spec`: NativeExtensionApp, 
+        val `body`: List<NativeIndexedMessagePart>, 
+        val `isMeta`: kotlin.Boolean) : NativeReactMessageType() {
+        companion object
+    }
+    
+
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        when(this) {
+            is NativeReactMessageType.React -> {
+                
+        Disposable.destroy(this.`reaction`)
+    
+        Disposable.destroy(this.`enable`)
+    
+                
+            }
+            is NativeReactMessageType.Extension -> {
+                
+        Disposable.destroy(this.`spec`)
+    
+        Disposable.destroy(this.`body`)
+    
+        Disposable.destroy(this.`isMeta`)
+    
+                
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeReactMessageType : FfiConverterRustBuffer<NativeReactMessageType>{
+    override fun read(buf: ByteBuffer): NativeReactMessageType {
+        return when(buf.getInt()) {
+            1 -> NativeReactMessageType.React(
+                FfiConverterTypeNativeReaction.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            2 -> NativeReactMessageType.Extension(
+                FfiConverterTypeNativeExtensionApp.read(buf),
+                FfiConverterSequenceTypeNativeIndexedMessagePart.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeReactMessageType) = when(value) {
+        is NativeReactMessageType.React -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeReaction.allocationSize(value.`reaction`)
+                + FfiConverterBoolean.allocationSize(value.`enable`)
+            )
+        }
+        is NativeReactMessageType.Extension -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeNativeExtensionApp.allocationSize(value.`spec`)
+                + FfiConverterSequenceTypeNativeIndexedMessagePart.allocationSize(value.`body`)
+                + FfiConverterBoolean.allocationSize(value.`isMeta`)
+            )
+        }
+    }
+
+    override fun write(value: NativeReactMessageType, buf: ByteBuffer) {
+        when(value) {
+            is NativeReactMessageType.React -> {
+                buf.putInt(1)
+                FfiConverterTypeNativeReaction.write(value.`reaction`, buf)
+                FfiConverterBoolean.write(value.`enable`, buf)
+                Unit
+            }
+            is NativeReactMessageType.Extension -> {
+                buf.putInt(2)
+                FfiConverterTypeNativeExtensionApp.write(value.`spec`, buf)
+                FfiConverterSequenceTypeNativeIndexedMessagePart.write(value.`body`, buf)
+                FfiConverterBoolean.write(value.`isMeta`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeReaction: Disposable  {
+    
+    object Heart : NativeReaction()
+    
+    
+    object Like : NativeReaction()
+    
+    
+    object Dislike : NativeReaction()
+    
+    
+    object Laugh : NativeReaction()
+    
+    
+    object Emphasize : NativeReaction()
+    
+    
+    object Question : NativeReaction()
+    
+    
+    data class Emoji(
+        val `emoji`: kotlin.String) : NativeReaction() {
+        companion object
+    }
+    
+    /**
+     * Receive only; rustpush does not support sending sticker reactions.
+     */
+    data class Sticker(
+        val `spec`: NativeExtensionApp?, 
+        val `body`: List<NativeIndexedMessagePart>) : NativeReaction() {
+        companion object
+    }
+    
+
+    
+    @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
+    override fun destroy() {
+        when(this) {
+            is NativeReaction.Heart -> {// Nothing to destroy
+            }
+            is NativeReaction.Like -> {// Nothing to destroy
+            }
+            is NativeReaction.Dislike -> {// Nothing to destroy
+            }
+            is NativeReaction.Laugh -> {// Nothing to destroy
+            }
+            is NativeReaction.Emphasize -> {// Nothing to destroy
+            }
+            is NativeReaction.Question -> {// Nothing to destroy
+            }
+            is NativeReaction.Emoji -> {
+                
+        Disposable.destroy(this.`emoji`)
+    
+                
+            }
+            is NativeReaction.Sticker -> {
+                
+        Disposable.destroy(this.`spec`)
+    
+        Disposable.destroy(this.`body`)
+    
+                
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeReaction : FfiConverterRustBuffer<NativeReaction>{
+    override fun read(buf: ByteBuffer): NativeReaction {
+        return when(buf.getInt()) {
+            1 -> NativeReaction.Heart
+            2 -> NativeReaction.Like
+            3 -> NativeReaction.Dislike
+            4 -> NativeReaction.Laugh
+            5 -> NativeReaction.Emphasize
+            6 -> NativeReaction.Question
+            7 -> NativeReaction.Emoji(
+                FfiConverterString.read(buf),
+                )
+            8 -> NativeReaction.Sticker(
+                FfiConverterOptionalTypeNativeExtensionApp.read(buf),
+                FfiConverterSequenceTypeNativeIndexedMessagePart.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeReaction) = when(value) {
+        is NativeReaction.Heart -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Like -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Dislike -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Laugh -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Emphasize -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Question -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is NativeReaction.Emoji -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`emoji`)
+            )
+        }
+        is NativeReaction.Sticker -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalTypeNativeExtensionApp.allocationSize(value.`spec`)
+                + FfiConverterSequenceTypeNativeIndexedMessagePart.allocationSize(value.`body`)
+            )
+        }
+    }
+
+    override fun write(value: NativeReaction, buf: ByteBuffer) {
+        when(value) {
+            is NativeReaction.Heart -> {
+                buf.putInt(1)
+                Unit
+            }
+            is NativeReaction.Like -> {
+                buf.putInt(2)
+                Unit
+            }
+            is NativeReaction.Dislike -> {
+                buf.putInt(3)
+                Unit
+            }
+            is NativeReaction.Laugh -> {
+                buf.putInt(4)
+                Unit
+            }
+            is NativeReaction.Emphasize -> {
+                buf.putInt(5)
+                Unit
+            }
+            is NativeReaction.Question -> {
+                buf.putInt(6)
+                Unit
+            }
+            is NativeReaction.Emoji -> {
+                buf.putInt(7)
+                FfiConverterString.write(value.`emoji`, buf)
+                Unit
+            }
+            is NativeReaction.Sticker -> {
+                buf.putInt(8)
+                FfiConverterOptionalTypeNativeExtensionApp.write(value.`spec`, buf)
+                FfiConverterSequenceTypeNativeIndexedMessagePart.write(value.`body`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class NativeTextFormat {
+    
+    data class Flags(
+        val `bold`: kotlin.Boolean, 
+        val `italic`: kotlin.Boolean, 
+        val `underline`: kotlin.Boolean, 
+        val `strikethrough`: kotlin.Boolean) : NativeTextFormat() {
+        companion object
+    }
+    
+    /**
+     * Raw `TextEffect` discriminant (Big = 5, Small = 11, Shake = 9, Nod = 8,
+     * Explode = 12, Ripple = 4, Bloom = 6, Jitter = 10).
+     */
+    data class Effect(
+        val `effect`: kotlin.UInt) : NativeTextFormat() {
+        companion object
+    }
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeTextFormat : FfiConverterRustBuffer<NativeTextFormat>{
+    override fun read(buf: ByteBuffer): NativeTextFormat {
+        return when(buf.getInt()) {
+            1 -> NativeTextFormat.Flags(
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                )
+            2 -> NativeTextFormat.Effect(
+                FfiConverterUInt.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NativeTextFormat) = when(value) {
+        is NativeTextFormat.Flags -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`bold`)
+                + FfiConverterBoolean.allocationSize(value.`italic`)
+                + FfiConverterBoolean.allocationSize(value.`underline`)
+                + FfiConverterBoolean.allocationSize(value.`strikethrough`)
+            )
+        }
+        is NativeTextFormat.Effect -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`effect`)
+            )
+        }
+    }
+
+    override fun write(value: NativeTextFormat, buf: ByteBuffer) {
+        when(value) {
+            is NativeTextFormat.Flags -> {
+                buf.putInt(1)
+                FfiConverterBoolean.write(value.`bold`, buf)
+                FfiConverterBoolean.write(value.`italic`, buf)
+                FfiConverterBoolean.write(value.`underline`, buf)
+                FfiConverterBoolean.write(value.`strikethrough`, buf)
+                Unit
+            }
+            is NativeTextFormat.Effect -> {
+                buf.putInt(2)
+                FfiConverterUInt.write(value.`effect`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
 
 
 
@@ -5969,6 +10470,38 @@ public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
+    override fun read(buf: ByteBuffer): kotlin.ULong? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterULong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ULong?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterULong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?> {
     override fun read(buf: ByteBuffer): kotlin.Double? {
         if (buf.get().toInt() == 0) {
@@ -5991,6 +10524,38 @@ public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?>
         } else {
             buf.put(1)
             FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalBoolean: FfiConverterRustBuffer<kotlin.Boolean?> {
+    override fun read(buf: ByteBuffer): kotlin.Boolean? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterBoolean.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Boolean?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterBoolean.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Boolean?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterBoolean.write(value, buf)
         }
     }
 }
@@ -6065,6 +10630,70 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeNativeExtensionApp: FfiConverterRustBuffer<NativeExtensionApp?> {
+    override fun read(buf: ByteBuffer): NativeExtensionApp? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeExtensionApp.read(buf)
+    }
+
+    override fun allocationSize(value: NativeExtensionApp?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeExtensionApp.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeExtensionApp?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeExtensionApp.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeLinkMeta: FfiConverterRustBuffer<NativeLinkMeta?> {
+    override fun read(buf: ByteBuffer): NativeLinkMeta? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeLinkMeta.read(buf)
+    }
+
+    override fun allocationSize(value: NativeLinkMeta?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeLinkMeta.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeLinkMeta?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeLinkMeta.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeNativePushState: FfiConverterRustBuffer<NativePushState?> {
     override fun read(buf: ByteBuffer): NativePushState? {
         if (buf.get().toInt() == 0) {
@@ -6087,6 +10716,198 @@ public object FfiConverterOptionalTypeNativePushState: FfiConverterRustBuffer<Na
         } else {
             buf.put(1)
             FfiConverterTypeNativePushState.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeShareProfile: FfiConverterRustBuffer<NativeShareProfile?> {
+    override fun read(buf: ByteBuffer): NativeShareProfile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeShareProfile.read(buf)
+    }
+
+    override fun allocationSize(value: NativeShareProfile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeShareProfile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeShareProfile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeShareProfile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeCertifiedContext: FfiConverterRustBuffer<NativeCertifiedContext?> {
+    override fun read(buf: ByteBuffer): NativeCertifiedContext? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeCertifiedContext.read(buf)
+    }
+
+    override fun allocationSize(value: NativeCertifiedContext?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeCertifiedContext.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeCertifiedContext?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeCertifiedContext.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeConversationData: FfiConverterRustBuffer<NativeConversationData?> {
+    override fun read(buf: ByteBuffer): NativeConversationData? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeConversationData.read(buf)
+    }
+
+    override fun allocationSize(value: NativeConversationData?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeConversationData.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeConversationData?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeConversationData.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeMmcsFile: FfiConverterRustBuffer<NativeMmcsFile?> {
+    override fun read(buf: ByteBuffer): NativeMmcsFile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeMmcsFile.read(buf)
+    }
+
+    override fun allocationSize(value: NativeMmcsFile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeMmcsFile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeMmcsFile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeMmcsFile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeScheduleMode: FfiConverterRustBuffer<NativeScheduleMode?> {
+    override fun read(buf: ByteBuffer): NativeScheduleMode? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeScheduleMode.read(buf)
+    }
+
+    override fun allocationSize(value: NativeScheduleMode?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeScheduleMode.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeScheduleMode?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeScheduleMode.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativeTypingApp: FfiConverterRustBuffer<NativeTypingApp?> {
+    override fun read(buf: ByteBuffer): NativeTypingApp? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeTypingApp.read(buf)
+    }
+
+    override fun allocationSize(value: NativeTypingApp?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeTypingApp.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeTypingApp?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeTypingApp.write(value, buf)
         }
     }
 }
@@ -6129,6 +10950,102 @@ public object FfiConverterOptionalTypeKeyType: FfiConverterRustBuffer<KeyType?> 
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeNativePartExtension: FfiConverterRustBuffer<NativePartExtension?> {
+    override fun read(buf: ByteBuffer): NativePartExtension? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativePartExtension.read(buf)
+    }
+
+    override fun allocationSize(value: NativePartExtension?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativePartExtension.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativePartExtension?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativePartExtension.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeNativePushMessage: FfiConverterRustBuffer<NativePushMessage?> {
+    override fun read(buf: ByteBuffer): NativePushMessage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativePushMessage.read(buf)
+    }
+
+    override fun allocationSize(value: NativePushMessage?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativePushMessage.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativePushMessage?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativePushMessage.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalSequenceTypeNativeMessageTarget: FfiConverterRustBuffer<List<NativeMessageTarget>?> {
+    override fun read(buf: ByteBuffer): List<NativeMessageTarget>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceTypeNativeMessageTarget.read(buf)
+    }
+
+    override fun allocationSize(value: List<NativeMessageTarget>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceTypeNativeMessageTarget.allocationSize(value)
+        }
+    }
+
+    override fun write(value: List<NativeMessageTarget>?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceTypeNativeMessageTarget.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -6147,6 +11064,62 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterString.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceByteArray: FfiConverterRustBuffer<List<kotlin.ByteArray>> {
+    override fun read(buf: ByteBuffer): List<kotlin.ByteArray> {
+        val len = buf.getInt()
+        return List<kotlin.ByteArray>(len) {
+            FfiConverterByteArray.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.ByteArray>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterByteArray.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<kotlin.ByteArray>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterByteArray.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeNativeIndexedMessagePart: FfiConverterRustBuffer<List<NativeIndexedMessagePart>> {
+    override fun read(buf: ByteBuffer): List<NativeIndexedMessagePart> {
+        val len = buf.getInt()
+        return List<NativeIndexedMessagePart>(len) {
+            FfiConverterTypeNativeIndexedMessagePart.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NativeIndexedMessagePart>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNativeIndexedMessagePart.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NativeIndexedMessagePart>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNativeIndexedMessagePart.write(it, buf)
         }
     }
 }
@@ -6297,6 +11270,34 @@ public object FfiConverterSequenceTypeKeystorePadding: FfiConverterRustBuffer<Li
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeNativeMessageTarget: FfiConverterRustBuffer<List<NativeMessageTarget>> {
+    override fun read(buf: ByteBuffer): List<NativeMessageTarget> {
+        val len = buf.getInt()
+        return List<NativeMessageTarget>(len) {
+            FfiConverterTypeNativeMessageTarget.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NativeMessageTarget>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNativeMessageTarget.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NativeMessageTarget>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNativeMessageTarget.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.String, kotlin.String>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, kotlin.String> {
         val len = buf.getInt()
@@ -6328,7 +11329,15 @@ public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.Str
             FfiConverterString.write(v, buf)
         }
     }
-} fun `doLock`()
+}
+
+
+
+
+
+
+
+ fun `doLock`()
         = 
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_do_lock(
@@ -6365,6 +11374,20 @@ public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.Str
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_is_locked(
         _status)
+}
+    )
+    }
+    
+
+        /**
+         * Builds a new outgoing message with a fresh client-generated id. The id is final:
+         * store it as the message GUID right away, there is no server-assigned GUID.
+         */
+    @Throws(NativeMsgException::class) fun `newMessageInst`(`conversation`: NativeConversationData, `sender`: kotlin.String, `message`: NativeMessage): NativeMessageInst {
+            return FfiConverterTypeNativeMessageInst.lift(
+    uniffiRustCallWithError(NativeMsgException) { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_new_message_inst(
+        FfiConverterTypeNativeConversationData.lower(`conversation`),FfiConverterString.lower(`sender`),FfiConverterTypeNativeMessage.lower(`message`),_status)
 }
     )
     }

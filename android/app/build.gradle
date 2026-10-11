@@ -166,6 +166,7 @@ def uniffiOutDir = file("src/main/kotlin")
 tasks.register("rustUniffiKotlin") {
     inputs.files(
         file("${rustRootDir}/src/native.rs"),
+        file("${rustRootDir}/src/native_types.rs"),
         file("${rustRootDir}/src/keystore.rs"),
         file("${rustRootDir}/Cargo.toml")
     )
@@ -246,14 +247,20 @@ android.applicationVariants.all { variant ->
         rustBuildTasks.add(rustTask)
     }
 
-    variant.sourceSets.each { sourceSet ->
-        sourceSet.jniLibs.srcDir(variantOutputsDir)
-    }
+    // Only the variant-specific source set: variant.sourceSets also contains shared ones
+    // (main, debug, flavor), which would leak every variant's .so into every other variant.
+    android.sourceSets.maybeCreate(variant.name).jniLibs.srcDir(variantOutputsDir)
 
     def capitalizedVariant = variant.name.capitalize()
-    tasks.matching { it.name in ["merge${capitalizedVariant}NativeLibs", "merge${variant.buildType.name.capitalize()}NativeLibs"] }.configureEach { mergeTask ->
+    // toString(): `in` on a list of GStrings never matches a String task name
+    def mergeTaskNames = ["merge${capitalizedVariant}JniLibFolders", "merge${capitalizedVariant}NativeLibs", "merge${variant.buildType.name.capitalize()}NativeLibs"]*.toString()
+    tasks.matching { it.name in mergeTaskNames }.configureEach { mergeTask ->
         mergeTask.dependsOn(rustBuildTasks)
-        mergeTask.dependsOn("rustUniffiKotlin")
+    }
+    // Kotlin bindings live in src/main/kotlin and must be regenerated before anything reads the
+    // sources (kapt, compile), or the dex and the .so drift apart
+    tasks.matching { it.name == "pre${capitalizedVariant}Build".toString() }.configureEach { preTask ->
+        preTask.dependsOn("rustUniffiKotlin")
     }
 }
 
@@ -269,7 +276,7 @@ configurations.all { configuration ->
 }
 
 dependencies {
-    implementation "io.objectbox:objectbox-kotlin:4.0.0"
+    implementation "io.objectbox:objectbox-kotlin:$objectboxVersion"
     // Jetpack Compose
     def compose_bom = platform("androidx.compose:compose-bom:2024.09.02")
     implementation compose_bom

@@ -1,4 +1,4 @@
-use std::{collections::{BTreeMap, HashMap}, fmt::Debug, io::Cursor, sync::{Arc, LazyLock, OnceLock, RwLock, Weak}, time::{Duration, SystemTime}};
+use std::{collections::{BTreeMap, HashMap}, fmt::Debug, io::{Cursor, Seek, Write}, sync::{Arc, LazyLock, OnceLock, RwLock, Weak}, time::{Duration, SystemTime}};
 
 use flexi_logger::{FileSpec, Logger, WriteMode};
 use log::{error, info, warn};
@@ -7,7 +7,9 @@ use rustpush::{EntitlementAuthState, GenerateVerificationTokenRequest, PushError
 use tokio::{runtime::{Handle, Runtime}, sync::Mutex};
 
 use futures::FutureExt;
+use rustpush::{Attachment, MMCSFile, MessageInst};
 use uuid::Uuid;
+use crate::native_types::{NativeAttachment, NativeConversationData, NativeMsgError, NativeMessage, NativeMessageInst, NativeMmcsFile, NativePushMessage};
 use crate::{RUNTIME, api::api::{APSWatcher, DaemonData, PollResult, PushMessage, SharedPushState, approve_circle, decline_facetime, do_first_time_init, get_2fa_code, get_entitlements, recv_wait, set_status, teardown_2fa}, frb_generated::FLUTTER_RUST_BRIDGE_HANDLER, init_logger};
 
 #[derive(uniffi::Record)] 
@@ -367,5 +369,144 @@ impl NativePushState {
                 warn!("Failed to decline publish status {e}");
             }
         });
+    }
+}
+#[uniffi::export(with_foreign)]
+pub trait NativeProgressCallback: Send + Sync + Debug {
+    fn on_progress(&self, progress: u64, total: u64);
+}
+
+/// Builds a new outgoing message with a fresh client-generated id. The id is final:
+/// store it as the message GUID right away, there is no server-assigned GUID.
+#[uniffi::export]
+pub fn new_message_inst(conversation: NativeConversationData, sender: String, message: NativeMessage) -> Result<NativeMessageInst, NativeMsgError> {
+    Ok(MessageInst::new(conversation.into(), &sender, message.try_into()?).into())
+}
+
+/// Creates `<path>.part`, lets `write` fill it, then renames it to `path`.
+/// A file at `path` is therefore always complete.
+async fn write_atomically<F, Fut>(path: &str, write: F) -> Result<(), NativeMsgError>
+    where F: FnOnce(std::fs::File) -> Fut, Fut: std::future::Future<Output = Result<std::fs::File, NativeMsgError>> {
+    if let Some(parent) = std::path::Path::new(path).parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp = format!("{path}.part");
+    let file = std::fs::File::create(&tmp)?;
+    let result = async {
+        let mut file = write(file).await?;
+        file.flush()?;
+        Ok::<_, NativeMsgError>(())
+    }.await;
+    match result {
+        Ok(()) => Ok(std::fs::rename(&tmp, path)?),
+        Err(e) => {
+            let _ = std::fs::remove_file(&tmp);
+            Err(e)
+        }
+    }
+}
+
+/// Messaging API used by the native (Kotlin) backend.
+///
+/// All async methods run on the shared rustpush `RUNTIME`; the returned futures can be
+/// awaited from any Kotlin coroutine dispatcher.
+#[uniffi::export]
+impl NativePushState {
+    /// Returns a copy of a queued push message without removing it from the queue.
+    /// Returns `None` if the key was already completed or dropped.
+    pub async fn take_push_message(&self, key: u64) -> Option<NativePushMessage> {
+        RUNTIME.spawn(async move {
+            QUEUED_MESSAGES.lock().await.1.get(&key).map(NativePushMessage::from)
+        }).await.ok().flatten()
+    }
+
+    /// Removes a push message from the queue. Only call this once the message has been
+    /// durably handled; until then rustpush re-emits it (every 30s, up to 5 times).
+    pub async fn complete_msg(&self, key: u64) {
+        let _ = RUNTIME.spawn(async move {
+            info!("finishing pointer {key}");
+            QUEUED_MESSAGES.lock().await.1.remove(&key);
+        }).await;
+    }
+
+    pub async fn get_handles(&self) -> Vec<String> {
+        let client = self.state.client.clone();
+        RUNTIME.spawn(async move {
+            client.identity.get_handles().await.to_vec()
+        }).await.unwrap_or_default()
+    }
+
+    pub async fn get_my_phone_handles(&self) -> Vec<String> {
+        let client = self.state.client.clone();
+        RUNTIME.spawn(async move {
+            client.identity.get_my_phone_handles().await.to_vec()
+        }).await.unwrap_or_default()
+    }
+
+    /// Sends any message (normal message, reaction, read receipt, typing, edit, unsend, ...)
+    /// and waits for delivery confirmation.
+    ///
+    /// Returns the message as sent: rustpush fills in `sent_timestamp` and, for new
+    /// conversations, `conversation.sender_guid`, both of which should be persisted.
+    ///
+    /// Unlike the FRB `send`, this does not broadcast `PushMessage::SendConfirm`; the
+    /// result is returned to the caller directly.
+    pub async fn send(&self, msg: NativeMessageInst) -> Result<NativeMessageInst, NativeMsgError> {
+        let mut inst: MessageInst = msg.try_into()?;
+        let client = self.state.client.clone();
+        RUNTIME.spawn(async move {
+            let job = client.send(&mut inst).await?;
+            if let Some(handle) = job.handle {
+                match handle.await {
+                    Ok(result) => result?,
+                    Err(e) => return Err(NativeMsgError::Permanent { msg: format!("send task failed: {e}") }),
+                }
+            }
+            info!("native send finished {}", inst.id);
+            Ok(inst.into())
+        }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("send task failed: {e}") })?
+    }
+
+    /// Downloads an attachment to `path`. The file only appears at `path` once the
+    /// download completed successfully.
+    pub async fn download_attachment(&self, attachment: NativeAttachment, path: String, progress: Arc<dyn NativeProgressCallback>) -> Result<(), NativeMsgError> {
+        let state = self.state.clone();
+        let attachment: Attachment = attachment.into();
+        RUNTIME.spawn(async move {
+            write_atomically(&path, |mut file| async move {
+                attachment.get_attachment(&state.conn, &mut file, |prog, total| {
+                    progress.on_progress(prog as u64, total as u64);
+                }).await?;
+                Ok(file)
+            }).await
+        }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("download task failed: {e}") })?
+    }
+
+    /// Downloads a bare MMCS file (group icons, transcript backgrounds) to `path`.
+    pub async fn download_mmcs(&self, file: NativeMmcsFile, path: String, progress: Arc<dyn NativeProgressCallback>) -> Result<(), NativeMsgError> {
+        let state = self.state.clone();
+        let mmcs: MMCSFile = file.into();
+        RUNTIME.spawn(async move {
+            write_atomically(&path, |mut file| async move {
+                mmcs.get_attachment(&state.conn, &mut file, |prog, total| {
+                    progress.on_progress(prog as u64, total as u64);
+                }).await?;
+                Ok(file)
+            }).await
+        }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("download task failed: {e}") })?
+    }
+
+    /// Uploads a file to MMCS and returns an attachment ready to be put in a message part.
+    pub async fn upload_attachment(&self, path: String, mime: String, uti: String, name: String, progress: Arc<dyn NativeProgressCallback>) -> Result<NativeAttachment, NativeMsgError> {
+        let state = self.state.clone();
+        RUNTIME.spawn(async move {
+            let mut file = std::fs::File::open(&path)?;
+            let prepared = MMCSFile::prepare_put(&mut file).await?;
+            file.rewind()?;
+            let attachment = Attachment::new_mmcs(&state.conn, &prepared, file, &mime, &uti, &name, |prog, total| {
+                progress.on_progress(prog as u64, total as u64);
+            }).await?;
+            Ok(attachment.into())
+        }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("upload task failed: {e}") })?
     }
 }
