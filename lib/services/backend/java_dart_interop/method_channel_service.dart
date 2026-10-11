@@ -12,6 +12,7 @@ import 'package:bluebubbles/services/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:mime_type/mime_type.dart';
 import 'package:bluebubbles/src/rust/api/api.dart' as api;
 
 MethodChannelService mcs = Get.isRegistered<MethodChannelService>() ? Get.find<MethodChannelService>() : Get.put(MethodChannelService());
@@ -403,6 +404,106 @@ class MethodChannelService extends GetxService {
           await completer.future;
           return Future.value(true);
         }
+      case "send-message":
+        await Database.waitForInit();
+        await pushService.initFuture;
+        Logger.info("Received send-message from Kotlin");
+        final Map<String, dynamic>? data = arguments;
+        if (data == null) return Future.value(false);
+        
+        Chat? chat = Chat.findOne(guid: data["chatGuid"]);
+        if (chat == null) return Future.value(false);
+        
+        List<dynamic> attachmentPaths = data["attachments"] ?? [];
+        
+        for (String path in attachmentPaths.cast<String>()) {
+           String name = path.split("/").last;
+           String? mType = mime(name) ?? "application/octet-stream";
+           
+           final attachment = Attachment(
+             guid: "temp-\${randomString(8)}",
+             isOutgoing: true,
+             mimeType: mType,
+             transferName: name,
+             totalBytes: 0,
+             sourcePath: path,
+           );
+
+           final message = Message(
+             text: "",
+             dateCreated: DateTime.now(),
+             hasAttachments: true,
+             isFromMe: true,
+             handleId: 0,
+             attachments: [attachment],
+           );
+           message.generateTempGuid();
+           attachment.guid = message.guid;
+           
+           await outq.queue(OutgoingItem(
+             type: QueueType.sendAttachment,
+             chat: chat,
+             message: message,
+           ));
+        }
+
+        String? text = data['text'];
+        if (text != null && text.isNotEmpty) {
+           final message = Message(
+             text: text,
+             dateCreated: DateTime.now(),
+             hasAttachments: false,
+             isFromMe: true,
+             handleId: 0,
+             attachments: [],
+           );
+           message.generateTempGuid();
+           
+           await outq.queue(OutgoingItem(
+             type: QueueType.sendMessage,
+             chat: chat,
+             message: message,
+           ));
+        }
+        
+        return Future.value(true);
+      case "execute-rust-send":
+        await Database.waitForInit();
+        await pushService.initFuture;
+        Logger.info("Received execute-rust-send from Kotlin");
+        final Map<String, dynamic>? data = arguments;
+        if (data == null) return Future.value(false);
+        
+        Chat? chat = Chat.findOne(guid: data["chatGuid"]);
+        if (chat == null) return Future.value(false);
+
+        Message? message = Message.findOne(guid: data["msgGuid"]);
+        if (message == null) return Future.value(false);
+        message.fetchAttachments();
+
+        // Queue attachments first
+        for (Attachment? attachment in message.attachments) {
+            if (attachment != null) {
+               // Kotlin already copied the file to the app document directory
+               attachment.sourcePath = "\${fs.appDocDir.path}/attachments/\${attachment.guid}/\${attachment.transferName}";
+               await outq.queue(OutgoingItem(
+                 type: QueueType.sendAttachment,
+                 chat: chat,
+                 message: message,
+                 customArgs: {"audio": false},
+               ));
+            }
+        }
+
+        // Queue text
+        if (message.text != null && message.text!.isNotEmpty) {
+           await outq.queue(OutgoingItem(
+             type: QueueType.sendMessage,
+             chat: chat,
+             message: message,
+           ));
+        }
+        return Future.value(true);
       case "MarkChatRead":
         if (ls.isAlive) return Future.value(true);
         await Database.waitForInit();

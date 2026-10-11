@@ -284,7 +284,9 @@ class ActionHandler extends GetxService {
         }
         await file.writeAsBytes(attachment.bytes!);
       } else {
-        await File(attachment.sourcePath!).copy(pathName);
+        if (attachment.sourcePath != null && canonicalize(attachment.sourcePath!) != canonicalize(pathName)) {
+          await File(attachment.sourcePath!).copy(pathName);
+        }
       }
 
       var mm = attachment.mimeType ?? mime(attachment.transferName);

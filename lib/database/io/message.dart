@@ -260,7 +260,7 @@ class BulkSaveNewMessages extends AsyncTask<List<dynamic>, List<Message>> {
           isNewer = first.dateCreated!.isAfter(inputChat.latestMessage.dateCreated!);
           if (isNewer) {
             inputChat.latestMessage = first;
-            if (!first.isFromMe! && !cm.isChatActive(inputChat.guid)) {
+            if (!(first.isFromMe ?? true) && !cm.isChatActive(inputChat.guid)) {
               inputChat.toggleHasUnread(true);
             }
           }
@@ -1295,8 +1295,8 @@ class Message {
   String get fullText => sanitizeString([subject, text].where((e) => !isNullOrEmpty(e)).join("\n"));
 
   // first condition is for macOS < 11 and second condition is for macOS >= 11
-  bool get isLegacyUrlPreview => (balloonBundleId == "com.apple.messages.URLBalloonProvider" && hasDdResults!)
-      || ((hasDdResults! || isFromMe!) && (text ?? "").trim().isURL);
+  bool get isLegacyUrlPreview => (balloonBundleId == "com.apple.messages.URLBalloonProvider" && (hasDdResults ?? false))
+      || (((hasDdResults ?? false) || (isFromMe ?? true)) && (text ?? "").trim().isURL);
 
   String? get url => text?.replaceAll("\n", " ").split(" ").firstWhereOrNull((String e) => e.hasUrl);
 
@@ -1383,7 +1383,7 @@ class Message {
       ReactionTypes.toList().contains(item.associatedMessageType?.replaceAll("-", ""))).toList();
 
   Indicator get indicatorToShow {
-    if (!isFromMe!) return Indicator.NONE;
+    if (isFromMe != true) return Indicator.NONE;
     if (dateRead != null) return Indicator.READ;
     if (isDelivered) return Indicator.DELIVERED;
     if (dateDelivered != null) return Indicator.DELIVERED;
@@ -1402,7 +1402,7 @@ class Message {
   }
 
   bool sameSender(Message? other) {
-    return (isFromMe! && isFromMe == other?.isFromMe) || (!isFromMe! && !(other?.isFromMe ?? true) && handleId == other?.handleId);
+    return ((isFromMe ?? true) && isFromMe == other?.isFromMe) || (!(isFromMe ?? true) && !(other?.isFromMe ?? true) && handleId == other?.handleId);
   }
 
   void generateTempGuid() {
@@ -1422,11 +1422,11 @@ class Message {
   /// Get what shape the reply line should be
   LineType getLineType(Message? olderMessage, Message threadOriginator) {
     if (olderMessage?.threadOriginatorGuid != threadOriginatorGuid) olderMessage = threadOriginator;
-    if (isFromMe! && (olderMessage?.isFromMe ?? false)) {
+    if ((isFromMe ?? true) && (olderMessage?.isFromMe ?? false)) {
       return LineType.meToMe;
-    } else if (!isFromMe! && (olderMessage?.isFromMe ?? false)) {
+    } else if (!(isFromMe ?? true) && (olderMessage?.isFromMe ?? false)) {
       return LineType.meToOther;
-    } else if (isFromMe! && !(olderMessage?.isFromMe ?? false)) {
+    } else if ((isFromMe ?? true) && !(olderMessage?.isFromMe ?? false)) {
       return LineType.otherToMe;
     } else {
       return LineType.otherToOther;
@@ -1496,7 +1496,7 @@ class Message {
     // (the second condition might be redundant / unnecessary but I left it in
     // just in case)
     if (upperIsThreadOriginatorBubble(olderMessage) ||
-        (!threadOriginator.isFromMe! && isFromMe!) ||
+        (!(threadOriginator.isFromMe ?? true) && (isFromMe ?? true)) ||
         getLineType(olderMessage, threadOriginator) == LineType.meToMe ||
         getLineType(olderMessage, threadOriginator) == LineType.otherToMe) return true;
     // if the upper message is from me, then draw the connecting line
@@ -1633,7 +1633,7 @@ class Message {
 
     // Update has Dd results
     if ((existing.hasDdResults == null && newMessage.hasDdResults != null) ||
-        (!existing.hasDdResults! && newMessage.hasDdResults!)) {
+        (!(existing.hasDdResults ?? false) && (newMessage.hasDdResults ?? false))) {
       existing.hasDdResults = newMessage.hasDdResults;
     }
 
@@ -1759,8 +1759,8 @@ class Message {
       "dateRead": _dateRead.value?.millisecondsSinceEpoch,
       "dateDelivered":  _dateDelivered.value?.millisecondsSinceEpoch,
       "isDelivered": _isDelivered.value,
-      "isFromMe": isFromMe!,
-      "hasDdResults": hasDdResults!,
+      "isFromMe": isFromMe ?? true,
+      "hasDdResults": hasDdResults ?? false,
       "datePlayed": datePlayed?.millisecondsSinceEpoch,
       "itemType": itemType,
       "groupTitle": groupTitle,

@@ -2,7 +2,6 @@ package com.bluebubbles.messaging.socialite.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.exifinterface.media.ExifInterface
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.util.Log
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
