@@ -12,7 +12,8 @@ data class AttachmentEntity(
     var id: Long = 0,
     @Uid(2178477183992316459L)
     var originalROWID: Long? = null,
-    @Index
+    // Must match Dart: value index (flags 40), not the Java default hash index
+    @Index(type = IndexType.VALUE)
     @Unique
     @Uid(895699641082029197L)
     var guid: String? = null,
@@ -50,7 +51,8 @@ data class ChatEntity(
     @Id(assignable = true)
     @Uid(297833828287439140L)
     var id: Long = 0,
-    @Index
+    // Must match Dart: value index (flags 40), not the Java default hash index
+    @Index(type = IndexType.VALUE)
     @Unique
     @Uid(318412581013308394L)
     var guid: String? = null,
@@ -230,7 +232,8 @@ data class MessageEntity(
     var id: Long = 0,
     @Uid(1582361484724166619L)
     var originalROWID: Long? = null,
-    @Index
+    // Must match Dart: value index (flags 40), not the Java default hash index
+    @Index(type = IndexType.VALUE)
     @Unique
     @Uid(8669586978455730639L)
     var guid: String? = null,
@@ -381,8 +384,8 @@ data class ContactEntity(
     @Id(assignable = true)
     @Uid(755766469677376751L)
     var dbId: Long = 0,
-    @Index
-    @Unique
+    // Must match Dart: hash index, NOT unique (flags 2048)
+    @Index(type = IndexType.HASH)
     @Uid(708918913606465689L)
     var stringId: String? = null,
     @Uid(3572501485957552445L)

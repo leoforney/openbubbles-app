@@ -25,7 +25,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +34,10 @@ import androidx.core.content.FileProvider
 import com.bluebubbles.messaging.socialite.model.Attachment
 import com.bluebubbles.messaging.socialite.model.Chat
 import com.bluebubbles.messaging.socialite.model.Message
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.compose.runtime.mutableLongStateOf
+import kotlinx.coroutines.flow.catch
+
+private const val PAGE_SIZE = 50L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +46,6 @@ fun ChatScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     var text by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf<List<Message>>(emptyList()) }
@@ -75,29 +74,32 @@ fun ChatScreen(
         }.reversed()
     }
 
-    fun loadMessages(offset: Int = 0) {
+    // Number of newest messages kept live; grows by one page when scrolling up.
+    var limit by remember(chat.id) { mutableLongStateOf(PAGE_SIZE) }
+
+    fun loadMore() {
         if (isLoading || !hasMore) return
         isLoading = true
-        coroutineScope.launch(Dispatchers.IO) {
-            try {
-                // Keep your existing backend logic
-                val parsedMessages = com.bluebubbles.messaging.objectbox.ChatRepository.getMessages(chat.id, 50L, offset.toLong())
-                withContext(Dispatchers.Main) {
-                    if (parsedMessages.isEmpty()) hasMore = false
-                    else messages = if (offset == 0) parsedMessages else messages + parsedMessages
-                    isLoading = false
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                isLoading = false
-            }
-        }
+        limit += PAGE_SIZE
     }
 
     LaunchedEffect(chat.id) {
         messages = emptyList()
         hasMore = true
-        loadMessages(0)
+    }
+
+    LaunchedEffect(chat.id, limit) {
+        isLoading = true
+        com.bluebubbles.messaging.objectbox.ChatRepository.observeMessages(chat.id, limit)
+            .catch { e ->
+                android.util.Log.e("ChatScreen", "Failed to load messages", e)
+                isLoading = false
+            }
+            .collect { loaded ->
+                messages = loaded
+                hasMore = loaded.size >= limit
+                isLoading = false
+            }
     }
 
     Scaffold(
@@ -156,7 +158,7 @@ fun ChatScreen(
                 messages = messages,
                 chat = chat,
                 isLoading = isLoading,
-                onLoadMore = { loadMessages(messages.size) },
+                onLoadMore = { loadMore() },
                 onAttachmentClick = { viewingAttachment = it }
             )
 

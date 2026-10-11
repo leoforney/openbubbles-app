@@ -8,6 +8,13 @@ import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.equal
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 object ChatRepository {
     private val chatBox: Box<ChatEntity> get() = ObjectBox.store.boxFor()
@@ -93,6 +100,29 @@ object ChatRepository {
         )
     }
 
+    /**
+     * Live chat list. Re-queries whenever chats, messages, handles or contacts change, including
+     * changes committed by Dart (see [StoreChanges]).
+     */
+    fun observeChats(): Flow<List<Chat>> =
+        StoreChanges.of(ChatEntity_.__ENTITY_ID, MessageEntity_.__ENTITY_ID, HandleEntity_.__ENTITY_ID, ContactEntity_.__ENTITY_ID)
+            .onStart { emit(Unit) }
+            .conflate()
+            .map { getChats() }
+            .flowOn(Dispatchers.IO)
+
+    /**
+     * Live view of the newest [limit] messages of a chat. To page, collect again with a larger limit;
+     * only that many rows are loaded, never the whole history.
+     */
+    fun observeMessages(chatId: Long, limit: Long): Flow<List<Message>> =
+        StoreChanges.of(MessageEntity_.__ENTITY_ID, AttachmentEntity_.__ENTITY_ID)
+            .onStart { emit(Unit) }
+            .conflate()
+            .map { getMessages(chatId, limit, 0) }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+
     fun getMessages(chatId: Long, limit: Long = 50, offset: Long = 0): List<Message> {
         val chatEntity = chatBox.get(chatId) ?: return emptyList()
         // Wait, the message box has a chat relation? Actually we can query messageBox where chatId == chatId
@@ -115,7 +145,6 @@ object ChatRepository {
                         file = guidDir.listFiles()?.firstOrNull { it.isFile } ?: file
                     }
                     val filePath = file.absolutePath
-                    android.util.Log.d("ChatRepository", "Attachment guid=${a.guid} name=${a.transferName} mime=${a.mimeType} resolved=$filePath exists=${file.isFile}")
                     Attachment(
                         guid = a.guid ?: "",
                         mimeType = a.mimeType,

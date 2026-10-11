@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.bluebubbles.messaging.socialite.model.Chat
+import kotlinx.coroutines.flow.catch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,14 +60,9 @@ fun ChatListScreen(onChatSelected: (Chat) -> Unit) {
     var selectedProfile by remember { mutableStateOf<Chat?>(null) }
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val parsedChats = com.bluebubbles.messaging.objectbox.ChatRepository.getChats()
-                chats = parsedChats
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        com.bluebubbles.messaging.objectbox.ChatRepository.observeChats()
+            .catch { e -> android.util.Log.e("ChatListScreen", "Failed to load chats", e) }
+            .collect { chats = it }
     }
 
     Scaffold(

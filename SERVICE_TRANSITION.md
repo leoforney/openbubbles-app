@@ -426,10 +426,19 @@ Only after Compose covers every feature the Flutter UI provides:
 - Still to add when Milestone 3 needs them: `certify_delivery`, `convert_token_to_uuid`, `fetch_profile`, `parse_transcript_poster`, validate targets.
 
 ### Milestone 2: Native Data Layer
-- [ ] Entities moved to `com.bluebubbles.messaging.objectbox`, with UIDs verified against `lib/objectbox-model.json`.
-- [ ] Kotlin opens the store first; Dart attaches; both verified on an existing user database.
-- [ ] `asFlow()` + paged message queries.
-- **Acceptance:** A write from Kotlin is visible in the Dart `watch()` and Compose flows without restarting either.
+- [x] Entities moved to `com.bluebubbles.messaging.objectbox` (`ObjectBoxEntities.kt`). The Kotlin model matches `lib/objectbox-model.json` exactly: all 9 entities, every property id, UID, type, flag, index and relation. The `verifyObjectBoxModels` Gradle task now fails any build where the two drift apart. It runs after kapt and before packaging.
+- [x] **The JSON models are not enough.** They don't record the index type. Java's `@Index` on a String defaults to a *hash* index, while Dart's guid indexes are *value* indexes. The JSON files matched, yet the first native build read Dart's value-index entries as hash entries and failed with `FileCorruptException: Illegal index entry size`. Fixed with `@Index(type = IndexType.VALUE)` on `Chat/Message/Attachment.guid`, and with a hash index without `@Unique` on `Contact.stringId`. `verifyObjectBoxSchemas<Variant>` now compares the generated `MyObjectBox.java` with `lib/objectbox.g.dart`, matching every property by UID: type, storage-relevant flags (index type, uniqueness, ID) and index id. It fails the build on any difference. Negative-tested against the broken build: it reports all 4 mismatches.
+- [x] Kotlin opens the store first: `BlueBubblesApplication.onCreate` → `ObjectBox.init`. Dart's existing `Store.isOpen` → `Store.attach` path then takes over. If the native open fails, the app does not crash; Dart opens the store as before.
+- [x] Open options match Dart: max DB size is 5 GB, as in Dart's `openStore`. The Java default was 1 GB, which would have broken large databases whenever Kotlin opened first.
+- [x] Cross-runtime change notifications: `StoreChanges` registers an `obx_observe` observer through the C API (`obx_store_wrap` on the Java store handle). Commits from Dart therefore update Compose too; Java `store.subscribe()` only sees Java commits.
+- [x] `ChatRepository.observeChats()` / `observeMessages(chatId, limit)`. Only `limit` rows are loaded; paging raises the limit. `ChatListScreen` and `ChatScreen` collect these flows.
+- [x] `ObjectBox.update<T>(id) { }` runs read-modify-write inside a write transaction, so a Kotlin update cannot overwrite a change Dart committed in between. Kotlin code must use it (or `runInTx`) for every update of an existing object.
+- [ ] Device verification on an existing user database (see acceptance).
+- **Acceptance:**
+  - On a device upgraded from a Flutter-only build, all chats and messages are still present.
+  - The Flutter UI works: logs show "Successfully attached to an existing ObjectBox store".
+  - A message received while Compose is open appears without reopening the screen.
+  - A message written from Kotlin appears in Flutter.
 
 ### Milestone 3: Native Incoming Pipeline
 - [ ] `IncomingMessageHandler` covers every variant in the inventory, is idempotent by GUID and ordered per chat.

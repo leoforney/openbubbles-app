@@ -75,7 +75,7 @@
         tools:node="remove" />
 
     <application
-        android:name="${applicationName}"
+        android:name=".BlueBubblesApplication"
         android:allowBackup="false"
         android:appCategory="social"
         android:debuggable="false"

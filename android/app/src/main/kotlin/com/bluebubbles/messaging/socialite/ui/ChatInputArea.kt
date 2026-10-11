@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +52,8 @@ fun ChatInputBar(
     onCameraClick: () -> Unit,
     onSendClick: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -92,12 +100,40 @@ fun ChatInputBar(
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onGalleryClick) {
-                    Icon(Icons.Default.Add, contentDescription = "Gallery", tint = MaterialTheme.colorScheme.primary)
-                }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Attach media",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
-                IconButton(onClick = onCameraClick) {
-                    Text("📷", style = MaterialTheme.typography.bodyLarge)
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Take Picture") },
+                            leadingIcon = {
+                                Text("📷", style = MaterialTheme.typography.bodyLarge)
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onCameraClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Pick from gallery") },
+                            leadingIcon = {
+                                Text("🖼️", style = MaterialTheme.typography.bodyLarge)
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onGalleryClick()
+                            }
+                        )
+                    }
                 }
 
                 // Polished Text Field
