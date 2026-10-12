@@ -106,6 +106,12 @@ impl NativeLinkMeta {
     pub fn url(&self) -> Option<String> { self.0.data.url.as_ref().map(|u| u.relative.clone()) }
     pub fn original_url(&self) -> Option<String> { self.0.data.original_url.as_ref().map(|u| u.relative.clone()) }
     pub fn attachments(&self) -> Vec<Vec<u8>> { self.0.attachments.clone() }
+    /// "{w, h}" style size string as stored by Apple, if there is a preview image.
+    pub fn image_size(&self) -> Option<String> { self.0.data.image_metadata.as_ref().map(|m| m.size.clone()) }
+    pub fn image_url(&self) -> Option<String> { self.0.data.image_metadata.as_ref().map(|m| m.url.relative.clone()) }
+    pub fn icon_url(&self) -> Option<String> { self.0.data.icon_metadata.as_ref().map(|m| m.url.relative.clone()) }
+    /// Shared-passwords invites are rendered as an app balloon, not a URL preview.
+    pub fn is_passwords_invite(&self) -> bool { self.0.data.specialization2.is_some() }
 }
 
 #[derive(uniffi::Object)]

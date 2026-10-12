@@ -155,7 +155,7 @@ The native port keeps these semantics: complete after a successful persist, or a
 | Method | Sender | Native plan |
 |---|---|---|
 | `APNMsg` | `APNService` | Milestone 3 (`IncomingMessageHandler`) |
-| `SMSMsg` | `APNService`/`SMSObserver` | Milestone 6 (SMS relay port, `Chat.deliverSMS` `chat.dart:965`) |
+| `SMSMsg` | `APNService`/`SMSObserver` | **Descoped**: SMS forwarding stays in Flutter (`Chat.deliverSMS` `chat.dart:965`) |
 | `execute-rust-send` | `MessageSender.kt` | Milestone 4 (`OutgoingMessageQueue`) |
 | `ReplyChat`, `MarkChatRead` | `InternalIntentReceiver` | Milestone 4 / 6 |
 | `new-message`, `updated-message`, `group-*`, `participant-*`, `scheduled-message-error`, `socket-event`, `unifiedpush-settings`, `NewServerUrl`, `incoming-facetime` (legacy), `ft-call-status-changed`, `imessage-aliases-removed`, `chat-read-status-changed` | FCM / UnifiedPush / Socket.IO | **Drop** (server mode removed) |

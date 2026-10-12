@@ -7,7 +7,8 @@ import io.objectbox.relation.ToMany
 @NameInDb("Attachment")
 @Uid(2065429213543838585L)
 data class AttachmentEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(1511554263230297197L)
     var id: Long = 0,
     @Uid(2178477183992316459L)
@@ -42,13 +43,16 @@ data class AttachmentEntity(
 ) {
     @Uid(5777776419087046056L)
     lateinit var messageId: ToOne<MessageEntity>
+    // Explicit target-ID field so the relation property is not VIRTUAL (Dart has no such flag)
+    var messageIdId: Long = 0
 }
 
 @Entity
 @NameInDb("Chat")
 @Uid(9017250848141753702L)
 data class ChatEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(297833828287439140L)
     var id: Long = 0,
     // Must match Dart: value index (flags 40), not the Java default hash index
@@ -145,7 +149,8 @@ data class ChatEntity(
 @NameInDb("FCMData")
 @Uid(5390756932993878582L)
 data class FCMDataEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(843767696595301490L)
     var id: Long = 0,
     @Uid(4393840145875077709L)
@@ -167,7 +172,8 @@ data class FCMDataEntity(
 @NameInDb("Handle")
 @Uid(1716592500251888002L)
 data class HandleEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(683096758365457558L)
     var id: Long = 0,
     @Uid(191994702917313644L)
@@ -197,13 +203,16 @@ data class HandleEntity(
 ) {
     @Uid(6784884866959942259L)
     lateinit var contactRelationId: ToOne<ContactEntity>
+    // Explicit target-ID field so the relation property is not VIRTUAL (Dart has no such flag)
+    var contactRelationIdId: Long = 0
 }
 
 @Entity
 @NameInDb("ThemeEntry")
 @Uid(7380334062783734091L)
 data class ThemeEntryEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(3364349183457626105L)
     var id: Long = 0,
     @Uid(378260260370164099L)
@@ -221,13 +230,16 @@ data class ThemeEntryEntity(
 ) {
     @Uid(4809686302323910258L)
     lateinit var themeObjectId: ToOne<ThemeObjectEntity>
+    // Explicit target-ID field so the relation property is not VIRTUAL (Dart has no such flag)
+    var themeObjectIdId: Long = 0
 }
 
 @Entity
 @NameInDb("Message")
 @Uid(4148278195232901830L)
 data class MessageEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(2871568629586737055L)
     var id: Long = 0,
     @Uid(1582361484724166619L)
@@ -331,13 +343,16 @@ data class MessageEntity(
 ) {
     @Uid(1372898255926257108L)
     lateinit var chatId: ToOne<ChatEntity>
+    // Explicit target-ID field so the relation property is not VIRTUAL (Dart has no such flag)
+    var chatIdId: Long = 0
 }
 
 @Entity
 @NameInDb("ThemeObject")
 @Uid(7753273527865539946L)
 data class ThemeObjectEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(7682268131019867778L)
     var id: Long = 0,
     @Index
@@ -361,7 +376,8 @@ data class ThemeObjectEntity(
 @NameInDb("ThemeStruct")
 @Uid(1815690088052698449L)
 data class ThemeStructEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(7043518911115753096L)
     var id: Long = 0,
     @Index
@@ -381,7 +397,8 @@ data class ThemeStructEntity(
 @NameInDb("Contact")
 @Uid(2547083341603323785L)
 data class ContactEntity(
-    @Id(assignable = true)
+    // Plain @Id like Dart: self-assignable IDs break the shared ID sequence (duplicate IDs overwrite rows)
+    @Id
     @Uid(755766469677376751L)
     var dbId: Long = 0,
     // Must match Dart: hash index, NOT unique (flags 2048)

@@ -195,6 +195,9 @@ dependencies:
 
 
 dependency_overrides:
+  # Patched copy: Dart attaches to the store opened by ObjectBox Java (see third_party/objectbox/OPENBUBBLES_PATCH.md)
+  objectbox:
+    path: third_party/objectbox
   # overrides for packages stuck on outdated versions
   http: ^1.2.1 # metadata_fetch
   intl: ^0.19.0 # firebase_dart

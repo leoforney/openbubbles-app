@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bluebubbles/helpers/helpers.dart';
@@ -93,8 +94,37 @@ class Database {
     await initComplete.future;
   }
 
+  /// The native (Kotlin) side opens the store at process start and publishes its native pointer in
+  /// this file (see NativeStoreBridge.kt). Dart must use that exact instance: opening a second store
+  /// on the same files gives each its own ID counter, and new rows then overwrite existing ones.
+  ///
+  /// Returns null when the native side has no store in this process (file missing or written by an
+  /// earlier process). Throws if the native store exists but cannot be used, so that Dart never falls
+  /// back to opening a second instance.
+  static Store? _attachToNativeStore() {
+    if (!Platform.isAndroid) return null;
+    final refFile = File(join(fs.appDocDir.path, 'objectbox-native-store.json'));
+    if (!refFile.existsSync()) return null;
+    final Map<String, dynamic> ref = jsonDecode(refFile.readAsStringSync());
+    if (ref['pid'] != pid) return null; // stale, from a previous process
+    final pointer = int.parse(ref['pointer'] as String);
+    final bytes = ByteData(16)
+      ..setUint64(0, pid)
+      ..setUint64(8, pointer);
+    Logger.info("Attaching to the native ObjectBox store (pid $pid, pointer $pointer)");
+    return Store.fromReference(getObjectBoxModel(), bytes);
+  }
+
   static Future<void> _initDatabaseMobile({bool? storeOpenStatus}) async {
     Directory objectBoxDirectory = Directory(join(fs.appDocDir.path, 'objectbox'));
+
+    final nativeStore = _attachToNativeStore();
+    if (nativeStore != null) {
+      store = nativeStore;
+      Logger.info("Successfully attached to the native ObjectBox store");
+      return;
+    }
+
     final isStoreOpen = storeOpenStatus ?? Store.isOpen(objectBoxDirectory.path);
 
     try {

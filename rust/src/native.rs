@@ -9,7 +9,7 @@ use tokio::{runtime::{Handle, Runtime}, sync::Mutex};
 use futures::FutureExt;
 use rustpush::{Attachment, MMCSFile, MessageInst};
 use uuid::Uuid;
-use crate::native_types::{NativeAttachment, NativeConversationData, NativeMsgError, NativeMessage, NativeMessageInst, NativeMmcsFile, NativePushMessage};
+use crate::native_types::{NativeAttachment, NativeCertifiedContext, NativeConversationData, NativeMsgError, NativeMessage, NativeMessageInst, NativeMmcsFile, NativePushMessage};
 use crate::{RUNTIME, api::api::{APSWatcher, DaemonData, PollResult, PushMessage, SharedPushState, approve_circle, decline_facetime, do_first_time_init, get_2fa_code, get_entitlements, recv_wait, set_status, teardown_2fa}, frb_generated::FLUTTER_RUST_BRIDGE_HANDLER, init_logger};
 
 #[derive(uniffi::Record)] 
@@ -467,6 +467,17 @@ impl NativePushState {
         }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("send task failed: {e}") })?
     }
 
+    /// Confirms delivery of a received message that carried a certified context (newer clients),
+    /// optionally notifying the sender ("Delivered").
+    pub async fn certify_delivery(&self, context: NativeCertifiedContext, notify: bool) -> Result<(), NativeMsgError> {
+        let client = self.state.client.clone();
+        let context: rustpush::CertifiedContext = context.into();
+        RUNTIME.spawn(async move {
+            client.identity.certify_delivery("com.apple.madrid", &context, notify).await?;
+            Ok(())
+        }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("certify task failed: {e}") })?
+    }
+
     /// Downloads an attachment to `path`. The file only appears at `path` once the
     /// download completed successfully.
     pub async fn download_attachment(&self, attachment: NativeAttachment, path: String, progress: Arc<dyn NativeProgressCallback>) -> Result<(), NativeMsgError> {
@@ -509,4 +520,20 @@ impl NativePushState {
             Ok(attachment.into())
         }).await.map_err(|e| NativeMsgError::Permanent { msg: format!("upload task failed: {e}") })?
     }
+}
+
+/// Serializes an attachment the same way FRB's `save_attachment` does. Stored in Attachment
+/// `metadata["rustpush"]` so Flutter can render and re-download natively sent attachments.
+#[uniffi::export]
+pub fn attachment_to_plist(attachment: NativeAttachment) -> Result<String, NativeMsgError> {
+    let att: Attachment = attachment.into();
+    plist_to_string(&att).map_err(|e| NativeMsgError::Invalid { msg: format!("attachment plist: {e}") })
+}
+
+/// Inverse of [attachment_to_plist]; same format as FRB's `restore_attachment`.
+#[uniffi::export]
+pub fn attachment_from_plist(data: String) -> Result<NativeAttachment, NativeMsgError> {
+    let att: Attachment = plist::from_reader_xml(Cursor::new(data))
+        .map_err(|e| NativeMsgError::Invalid { msg: format!("attachment plist: {e}") })?;
+    Ok(att.into())
 }

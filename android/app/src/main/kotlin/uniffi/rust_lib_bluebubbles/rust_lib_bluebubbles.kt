@@ -1195,6 +1195,20 @@ internal open class UniffiVTableCallbackInterfaceSpecialAppleAuthCallback(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -1210,7 +1224,11 @@ internal open class UniffiVTableCallbackInterfaceSpecialAppleAuthCallback(
 // when the library is loaded.
 internal interface IntegrityCheckingUniffiLib : Library {
     // Integrity check functions only
-    fun uniffi_rust_lib_bluebubbles_checksum_func_do_lock(
+    fun uniffi_rust_lib_bluebubbles_checksum_func_attachment_from_plist(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_func_attachment_to_plist(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_func_do_lock(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_finish_unlock(
 ): Short
@@ -1294,6 +1312,14 @@ fun uniffi_rust_lib_bluebubbles_checksum_method_nativekeystore_decrypt(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_attachments(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_icon_url(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_image_size(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_image_url(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_is_passwords_invite(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_original_url(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_summary(
@@ -1303,6 +1329,8 @@ fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_title(
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_url(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativeprogresscallback_on_progress(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_certify_delivery(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_complete_msg(
 ): Short
@@ -1535,6 +1563,14 @@ fun uniffi_rust_lib_bluebubbles_fn_free_nativelinkmeta(`ptr`: Pointer,uniffi_out
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_attachments(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_icon_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_image_size(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_image_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_is_passwords_invite(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_original_url(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_summary(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -1555,6 +1591,8 @@ fun uniffi_rust_lib_bluebubbles_fn_clone_nativepushstate(`ptr`: Pointer,uniffi_o
 ): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_free_nativepushstate(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_certify_delivery(`ptr`: Pointer,`context`: RustBuffer.ByValue,`notify`: Byte,
+): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_complete_msg(`ptr`: Pointer,`key`: Long,
 ): Long
 fun uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_decline_facetime(`ptr`: Pointer,`guid`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1631,6 +1669,10 @@ fun uniffi_rust_lib_bluebubbles_fn_init_callback_vtable_specialappleauthcallback
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_method_specialappleauthcallback_got_verification(`ptr`: Pointer,`token`: RustBuffer.ByValue,`error`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+fun uniffi_rust_lib_bluebubbles_fn_func_attachment_from_plist(`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_func_attachment_to_plist(`attachment`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_func_do_lock(uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_func_finish_unlock(uniffi_out_err: UniffiRustCallStatus, 
@@ -1776,6 +1818,12 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_func_attachment_from_plist() != 42225.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_func_attachment_to_plist() != 26338.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_do_lock() != 42972.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1902,6 +1950,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_attachments() != 42763.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_icon_url() != 64578.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_image_size() != 41109.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_image_url() != 40673.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_is_passwords_invite() != 14290.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativelinkmeta_original_url() != 5315.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1915,6 +1975,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativeprogresscallback_on_progress() != 61330.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_certify_delivery() != 41443.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_method_nativepushstate_complete_msg() != 497.toShort()) {
@@ -5265,6 +5328,20 @@ public interface NativeLinkMetaInterface {
     
     fun `attachments`(): List<kotlin.ByteArray>
     
+    fun `iconUrl`(): kotlin.String?
+    
+    /**
+     * "{w, h}" style size string as stored by Apple, if there is a preview image.
+     */
+    fun `imageSize`(): kotlin.String?
+    
+    fun `imageUrl`(): kotlin.String?
+    
+    /**
+     * Shared-passwords invites are rendered as an app balloon, not a URL preview.
+     */
+    fun `isPasswordsInvite`(): kotlin.Boolean
+    
     fun `originalUrl`(): kotlin.String?
     
     fun `summary`(): kotlin.String?
@@ -5363,6 +5440,60 @@ open class NativeLinkMeta: Disposable, AutoCloseable, NativeLinkMetaInterface
     callWithPointer {
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_attachments(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `iconUrl`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_icon_url(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * "{w, h}" style size string as stored by Apple, if there is a preview image.
+     */override fun `imageSize`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_image_size(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    override fun `imageUrl`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_image_url(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Shared-passwords invites are rendered as an app balloon, not a URL preview.
+     */override fun `isPasswordsInvite`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativelinkmeta_is_passwords_invite(
         it, _status)
 }
     }
@@ -5827,6 +5958,12 @@ public object FfiConverterTypeNativeProgressCallback: FfiConverter<NativeProgres
 public interface NativePushStateInterface {
     
     /**
+     * Confirms delivery of a received message that carried a certified context (newer clients),
+     * optionally notifying the sender ("Delivered").
+     */
+    suspend fun `certifyDelivery`(`context`: NativeCertifiedContext, `notify`: kotlin.Boolean)
+    
+    /**
      * Removes a push message from the queue. Only call this once the message has been
      * durably handled; until then rustpush re-emits it (every 30s, up to 5 times).
      */
@@ -5975,6 +6112,32 @@ open class NativePushState: Disposable, AutoCloseable, NativePushStateInterface
         return uniffiRustCall() { status ->
             UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_clone_nativepushstate(pointer!!, status)
         }
+    }
+
+    
+    /**
+     * Confirms delivery of a received message that carried a certified context (newer clients),
+     * optionally notifying the sender ("Delivered").
+     */
+    @Throws(NativeMsgException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `certifyDelivery`(`context`: NativeCertifiedContext, `notify`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_method_nativepushstate_certify_delivery(
+                thisPtr,
+                FfiConverterTypeNativeCertifiedContext.lower(`context`),FfiConverterBoolean.lower(`notify`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_rust_lib_bluebubbles_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        NativeMsgException.ErrorHandler,
+    )
     }
 
     
@@ -11337,6 +11500,33 @@ public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.Str
 
 
 
+
+        /**
+         * Inverse of [attachment_to_plist]; same format as FRB's `restore_attachment`.
+         */
+    @Throws(NativeMsgException::class) fun `attachmentFromPlist`(`data`: kotlin.String): NativeAttachment {
+            return FfiConverterTypeNativeAttachment.lift(
+    uniffiRustCallWithError(NativeMsgException) { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_attachment_from_plist(
+        FfiConverterString.lower(`data`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Serializes an attachment the same way FRB's `save_attachment` does. Stored in Attachment
+         * `metadata["rustpush"]` so Flutter can render and re-download natively sent attachments.
+         */
+    @Throws(NativeMsgException::class) fun `attachmentToPlist`(`attachment`: NativeAttachment): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(NativeMsgException) { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_attachment_to_plist(
+        FfiConverterTypeNativeAttachment.lower(`attachment`),_status)
+}
+    )
+    }
+    
  fun `doLock`()
         = 
     uniffiRustCall() { _status ->

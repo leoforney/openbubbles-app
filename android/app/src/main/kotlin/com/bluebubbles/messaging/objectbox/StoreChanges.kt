@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 
 /**
- * Reports every commit to the store, no matter which runtime made it.
+ * Reports every commit to the store, no matter which runtime made it (Dart attaches to the same
+ * native instance, see [NativeStoreBridge]).
  *
  * ObjectBox Java observers (`store.subscribe()`) only fire for commits made through Java. Messages
  * written by Dart (incoming messages, delivery receipts, ...) would never reach Compose. This class
@@ -45,7 +46,6 @@ object StoreChanges {
 
     @Suppress("FunctionName")
     private interface ObxC : Library {
-        fun obx_store_wrap(coreStore: Pointer): Pointer?
         fun obx_observe(store: Pointer, callback: ObxObserver, userData: Pointer?): Pointer?
     }
 
@@ -73,8 +73,8 @@ object StoreChanges {
         // Dart (and Java) commits via the C API. Must not start transactions inside the callback.
         try {
             val lib = Native.load("objectbox-jni", ObxC::class.java)
-            val wrapped = lib.obx_store_wrap(Pointer(store.nativeStore))
-                ?: throw IllegalStateException("obx_store_wrap returned null")
+            val wrapped = NativeStoreBridge.cStore
+                ?: throw IllegalStateException("store not published via NativeStoreBridge")
             val callback = ObxObserver { typeIds, count, _ ->
                 val n = count.toInt()
                 if (typeIds != null && n > 0) {

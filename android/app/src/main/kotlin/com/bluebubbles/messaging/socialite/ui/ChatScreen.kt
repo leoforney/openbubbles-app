@@ -35,7 +35,10 @@ import com.bluebubbles.messaging.socialite.model.Attachment
 import com.bluebubbles.messaging.socialite.model.Chat
 import com.bluebubbles.messaging.socialite.model.Message
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 
 private const val PAGE_SIZE = 50L
 
@@ -54,6 +57,9 @@ fun ChatScreen(
     var viewingAttachment by remember { mutableStateOf<Attachment?>(null) }
     var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var pendingSendScroll by remember { mutableStateOf(false) }
 
     // Media Pickers
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -88,6 +94,31 @@ fun ChatScreen(
         hasMore = true
     }
 
+    // Tell the native incoming pipeline which chat is visible (no notification, no unread badge).
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(chat.id, lifecycleOwner) {
+        val tracker = com.bluebubbles.messaging.services.messaging.ActiveChatTracker
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    tracker.setActive(chat.id)
+                    com.bluebubbles.messaging.services.messaging.ReadReceipts.markChatRead(context, chat.id)
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> tracker.clear(chat.id)
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            tracker.setActive(chat.id)
+            com.bluebubbles.messaging.services.messaging.ReadReceipts.markChatRead(context, chat.id)
+        }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            tracker.clear(chat.id)
+        }
+    }
+
     LaunchedEffect(chat.id, limit) {
         isLoading = true
         com.bluebubbles.messaging.objectbox.ChatRepository.observeMessages(chat.id, limit)
@@ -96,9 +127,19 @@ fun ChatScreen(
                 isLoading = false
             }
             .collect { loaded ->
+                val previousNewestId = messages.firstOrNull()?.id
+                val newNewestId = loaded.firstOrNull()?.id
+                val hasNewMessage = previousNewestId != null && newNewestId != null && previousNewestId != newNewestId
                 messages = loaded
                 hasMore = loaded.size >= limit
                 isLoading = false
+
+                if (hasNewMessage && (pendingSendScroll || listState.firstVisibleItemIndex <= 1)) {
+                    pendingSendScroll = false
+                    coroutineScope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                }
             }
     }
 
@@ -145,8 +186,15 @@ fun ChatScreen(
                     cameraLauncher.launch(uri)
                 },
                 onSendClick = {
+                    val isAtBottom = listState.firstVisibleItemIndex <= 1
+                    if (isAtBottom) {
+                        pendingSendScroll = true
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    }
                     val attachmentPaths = selectedMediaUris.mapNotNull { com.bluebubbles.messaging.utils.FilesystemUtils.getAbsolutePath(context, it) }
-                    com.bluebubbles.messaging.services.backend_ui_interop.MessageSender.sendMessage(context, chat.id, text, attachmentPaths)
+                    com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.send(context, chat.id, text, attachmentPaths)
                     text = ""
                     selectedMediaUris = emptyList()
                 }
@@ -159,7 +207,8 @@ fun ChatScreen(
                 chat = chat,
                 isLoading = isLoading,
                 onLoadMore = { loadMore() },
-                onAttachmentClick = { viewingAttachment = it }
+                onAttachmentClick = { viewingAttachment = it },
+                listState = listState
             )
 
             if (viewingAttachment != null) {

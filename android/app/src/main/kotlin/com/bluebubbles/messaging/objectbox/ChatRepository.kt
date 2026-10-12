@@ -170,7 +170,8 @@ object ChatRepository {
                 date = msg.dateCreated?.time ?: 0L,
                 dateDelivered = msg.dateDelivered?.time ?: 0L,
                 dateRead = msg.dateRead?.time ?: 0L,
-                isError = (msg.errorVal ?: 0L) > 0L,
+                isError = (msg.errorVal ?: 0L) > 0L || msg.guid?.startsWith("error") == true,
+                isSending = msg.guid?.startsWith("temp") == true,
                 senderName = null, // Can map from msg.handleId if we want
                 attachments = attachmentsList,
                 reactions = reactionsList

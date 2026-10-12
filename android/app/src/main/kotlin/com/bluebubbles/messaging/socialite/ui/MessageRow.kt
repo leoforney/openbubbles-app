@@ -109,6 +109,7 @@ fun MessageRow(
                 if (!message.isIncoming && isLastByMe) {
                     val statusText = when {
                         message.isError -> "Not Delivered"
+                        message.isSending -> "Sending…"
                         message.dateRead > 0 -> "Read ${timeFormat.format(Date(message.dateRead))}"
                         message.dateDelivered > 0 -> "Delivered"
                         else -> "Sent"

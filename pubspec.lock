@@ -2138,10 +2138,9 @@ packages:
   objectbox:
     dependency: "direct main"
     description:
-      name: objectbox
-      sha256: ea823f4bf1d0a636e7aa50b43daabb64dd0fbd80b85a033016ccc1bc4f76f432
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/objectbox"
+      relative: true
+    source: path
     version: "4.0.3"
   objectbox_flutter_libs:
     dependency: "direct main"

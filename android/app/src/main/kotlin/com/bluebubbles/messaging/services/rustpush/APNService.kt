@@ -26,6 +26,7 @@ import com.bluebubbles.messaging.R
 import com.bluebubbles.messaging.services.backend_ui_interop.DartWorkManager
 import com.bluebubbles.messaging.services.backend_ui_interop.DartWorker
 import com.bluebubbles.messaging.services.backend_ui_interop.MethodCallHandler
+import com.bluebubbles.messaging.services.messaging.IncomingPipeline
 import com.bluebubbles.messaging.services.system.GetZenMode
 import com.bluebubbles.messaging.services.system.ZenModeUUIDHandler
 import com.bluebubbles.telephony_plus.receive.SMSObserver
@@ -43,6 +44,19 @@ import uniffi.rust_lib_bluebubbles.setupKeystore
 import uniffi.rust_lib_bluebubbles.start
 
 class APNService : Service(), MsgReceiver {
+    companion object {
+        /** The running service, if any. Set in onCreate, cleared in onDestroy. */
+        @Volatile
+        var instance: APNService? = null
+            private set
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
+    @Volatile
     var pushState: NativePushState? = null
     private var started = false
     private val binder = APNBinder()
@@ -94,6 +108,12 @@ class APNService : Service(), MsgReceiver {
     }
 
     override fun receievedMsg(ptr: ULong, retry: ULong) {
+        // Native pipeline first; it forwards anything it does not handle to Dart (forwardToDart).
+        IncomingPipeline.submit(this, ptr, retry)
+    }
+
+    /** The pre-M3 path: let Dart (running app or headless engine) handle the push. */
+    fun forwardToDart(ptr: ULong, retry: ULong) {
         Handler(Looper.getMainLooper()).post {
             if (MainActivity.engine != null) {
                 Log.i("ugh running", "here $ptr $retry")
@@ -290,6 +310,7 @@ class APNService : Service(), MsgReceiver {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (instance === this) instance = null
         pushState?.destroy()
         job.cancel()
     }

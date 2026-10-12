@@ -260,13 +260,15 @@ def compareGeneratedObjectBoxSchemas = { File javaFile, File dartFile ->
                       ID_MONOTONIC_SEQUENCE: 64, ID_SELF_ASSIGNABLE: 128, INDEX_PARTIAL_SKIP_NULL: 256,
                       INDEX_PARTIAL_SKIP_ZERO: 512, VIRTUAL: 1024, INDEX_HASH: 2048, INDEX_HASH64: 4096,
                       UNSIGNED: 8192, ID_COMPANION: 16384, UNIQUE_ON_CONFLICT_REPLACE: 32768, EXPIRATION_TIME: 65536]
-    // Binding-only flags (NON_PRIMITIVE_TYPE, ID_SELF_ASSIGNABLE, NOT_NULL, VIRTUAL, ...) are ignored.
-    int storageMask = 1 | 8 | 32 | 256 | 512 | 2048 | 4096 | 8192 | 32768 | 65536
+    // Every flag must match except NON_PRIMITIVE_TYPE, which ObjectBox documents as a Java-only
+    // detail (nullable wrapper types). Do NOT add exceptions without proof: ID_SELF_ASSIGNABLE was once
+    // treated as binding-only, and it made Kotlin inserts reuse IDs and overwrite existing messages.
+    int storageMask = ~2
     def propertyTypes = [Bool: 1, Byte: 2, Short: 3, Char: 4, Int: 5, Long: 6, Float: 7, Double: 8, String: 9,
                          Date: 10, Relation: 11, DateNano: 12, Flex: 13, ByteVector: 23, StringVector: 30]
 
     def java = [:]
-    def javaRe = /property\("(\w+)"(?:, "\w+", "\w+")?, PropertyType\.(\w+)\)\.id\((\d+), (-?\d+)L\)(?:\s*\.flags\(([^)]*)\))?(?:\s*\.indexId\((\d+), (-?\d+)L\))?/
+    def javaRe = /property\("(\w+)"(?:, "\w+"){0,2}, PropertyType\.(\w+)\)\.id\((\d+), (-?\d+)L\)(?:\s*\.flags\(([^)]*)\))?(?:\s*\.indexId\((\d+), (-?\d+)L\))?/
     (javaFile.text =~ javaRe).each { m ->
         int flags = m[5] ? m[5].split(/\|/).collect { flagValues[it.trim().tokenize('.').last()] as int }.sum() as int : 0
         java[m[4]] = [name: m[1], type: propertyTypes[m[2]], flags: flags & storageMask, index: m[7]]
@@ -278,6 +280,24 @@ def compareGeneratedObjectBoxSchemas = { File javaFile, File dartFile ->
     }
 
     def problems = []
+
+    // Entity flags. USE_NO_ARG_CONSTRUCTOR (1) is Java-only (the C core does not define it).
+    def javaEntityFlags = [:]
+    (javaFile.text =~ /entityBuilder\.id\((\d+), (-?\d+)L\)[^\n]*\n(?:\s*entityBuilder\.flags\(([^)]*)\);)?/).each { m ->
+        int f = m[3] ? m[3].split(/\|/).collect { [USE_NO_ARG_CONSTRUCTOR: 1, SYNC_ENABLED: 2, SHARED_GLOBAL_IDS: 4][it.trim().tokenize('.').last()] as int }.sum() as int : 0
+        javaEntityFlags[m[2]] = f & ~1
+    }
+    def dartEntityFlags = [:]
+    (dartFile.text =~ /ModelEntity\(\s*id: const obx_int\.IdUid\((\d+), (\d+)\),\s*name: '(\w+)',\s*lastPropertyId: const obx_int\.IdUid\(\d+, \d+\),\s*flags: (\d+)/).each { m ->
+        dartEntityFlags[m[2]] = m[4] as int
+    }
+    if (javaEntityFlags.size() != dartEntityFlags.size() || javaEntityFlags.isEmpty()) {
+        problems << "entity count/parse mismatch (kotlin=${javaEntityFlags.size()}, dart=${dartEntityFlags.size()})"
+    }
+    javaEntityFlags.each { uid, f ->
+        if (dartEntityFlags[uid] != f) problems << "entity uid ${uid}: kotlin flags=${f} dart flags=${dartEntityFlags[uid]}"
+    }
+
     if (java.isEmpty() || dart.isEmpty()) {
         problems << "could not parse properties (java=${java.size()}, dart=${dart.size()}); the generator output format changed, update this check"
     }

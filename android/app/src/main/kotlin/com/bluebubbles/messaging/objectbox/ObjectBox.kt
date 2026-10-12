@@ -47,17 +47,29 @@ object ObjectBox {
             if (_store != null) return
             val appContext = context.applicationContext
             val dir = directory(appContext)
+            // Never let a stale reference from a previous process point Dart at nothing.
+            NativeStoreBridge.clear(appContext)
+            if (NativeStoreBridge.isOpenedByDart(dir)) {
+                // Opening a second instance next to Dart's would split the ID counters.
+                throw IllegalStateException("Dart already opened the store in this process; not opening a second instance")
+            }
+            var opened: BoxStore? = null
             try {
-                val opened = MyObjectBox.builder()
+                opened = MyObjectBox.builder()
                     .androidContext(appContext)
                     .directory(dir)
                     .maxSizeInKByte(MAX_DB_SIZE_KB)
                     .build()
+                // Dart must attach to this exact instance. If it cannot be published, close it again
+                // so Dart opens the store alone instead of a second instance.
+                NativeStoreBridge.publish(appContext, opened, dir)
                 _store = opened
                 Log.i(TAG, "Opened ObjectBox store at ${dir.absolutePath} (size on disk ${opened.sizeOnDisk() / 1024} KB)")
                 StoreChanges.start(opened)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to open ObjectBox store at ${dir.absolutePath}", e)
+                Log.e(TAG, "Failed to open/publish ObjectBox store at ${dir.absolutePath}", e)
+                NativeStoreBridge.clear(appContext)
+                if (_store == null) opened?.close()
                 throw e
             }
             ChatRepository.init(appContext)

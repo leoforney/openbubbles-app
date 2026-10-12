@@ -21,6 +21,8 @@ data class Message(
     val dateDelivered: Long,
     val dateRead: Long,
     val isError: Boolean,
+    /** Queued or in flight (Dart convention: guid starts with "temp"). */
+    val isSending: Boolean = false,
     val senderName: String?,
     val attachments: List<Attachment>,
     val reactions: List<Reaction>

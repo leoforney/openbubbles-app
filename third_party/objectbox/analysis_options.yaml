@@ -1,0 +1,33 @@
+include: package:lints/recommended.yaml
+# https://dart.dev/guides/language/analysis-options
+# https://github.com/dart-lang/lints/blob/main/lib/core.yaml
+# https://github.com/dart-lang/lints/blob/main/lib/recommended.yaml
+# https://github.com/flutter/packages/blob/main/packages/flutter_lints/lib/flutter.yaml
+# https://dart.dev/guides/language/effective-dart
+
+linter:
+  rules:
+    - avoid_positional_boolean_parameters # Using named boolean parameters is much more readable.
+    - avoid_returning_this # Dart has a cascade operator (..function) which allows method chaining.
+    - directives_ordering # Effective Dart.
+    - prefer_const_constructors # From flutter rule set.
+    - prefer_const_constructors_in_immutables # From flutter rule set.
+    - prefer_expression_function_bodies # Effective Dart.
+    - prefer_relative_imports # Effective Dart.
+    - public_member_api_docs # Effective Dart.
+    - type_annotate_public_apis # Effective Dart.
+    - unnecessary_lambdas # Effective Dart.
+
+# exclude standalone packages:
+analyzer:
+  errors:
+    public_member_api_docs: error
+    type_annotate_public_apis: error
+  # Note: pana ignores these exclude rules, better add ignore_for_file comments.
+  exclude:
+    - example/**
+    - generator/**
+    - benchmark/**
+  language:
+    strict-casts: true
+    strict-inference: true

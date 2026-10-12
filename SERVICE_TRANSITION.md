@@ -284,8 +284,13 @@ fun <T> Query<T>.asFlow(): Flow<List<T>> = callbackFlow {
 - `observeMessages` must apply the limit in the query (`find(offset, limit)` inside a custom subscription, or a paging source). Running `find()` on all rows and then calling `take(limit)` loads the whole chat history on every change.
 - `buildChat` currently runs several queries per chat (latest message, unread count). Keep this out of a per-emission `map` over every chat. Consider storing denormalised `latestMessage`/unread fields, as Dart already does with `dbOnlyLatestMessageDate`.
 
-### 5.4 No GUID Reconciliation
-Remove the planned `reconcileGuid` / `temp-` ➔ `srv-` swapping. Outgoing messages use their final rustpush UUID from the moment they are inserted. Attachments likewise use their final GUID. Only the existing SMS "staging GUID" behaviour (`stagingGuid` in `reflectMessageDyn`) needs to be ported as-is.
+### 5.4 GUIDs of Outgoing Messages
+The final rustpush UUID is generated when the message is inserted, so no server GUID ever has to be matched up. While Flutter still renders the same rows, outgoing messages also follow **Dart's existing conventions**, because the Flutter UI decides sending/failed state from the guid prefix:
+- **pending:** `guid = "temp-xxxxxxxx"`, `stagingGuid = <rustpush id>`. Dart's `Message.findOne(guid)` also matches `stagingGuid`, so an early delivery receipt still finds the message.
+- **sent:** `guid = <rustpush id>`, `stagingGuid = null`. The attachment guid becomes `<id>_0` and its folder is renamed (Dart's `replaceAttachment`).
+- **failed:** `guid = "error-<reason>…"`, `errorVal = 1001`. `stagingGuid` is kept so a retry reuses the id.
+
+The swap from `temp-` to the final id is deterministic (no lookup by content). It can be dropped once Flutter is gone. `sendingServiceId` is deliberately **not** used: Dart's startup marks any message whose `sendingServiceId` differs from its own as "Crashed while still sending".
 
 ---
 
@@ -297,7 +302,7 @@ Remove the planned `reconcileGuid` / `temp-` ➔ `srv-` swapping. Outgoing messa
 | Caller | Purpose |
 | :--- | :--- |
 | `APNService.receievedMsg` | `APNMsg`: incoming rustpush messages |
-| `APNService.launchAgent` (`SMSObserver`) | `SMSMsg`: SMS relay/forwarding |
+| `APNService.launchAgent` (`SMSObserver`) | `SMSMsg`: SMS relay/forwarding (**descoped**: stays on Dart) |
 | `MessageSender.kt` | `execute-rust-send` |
 | `InternalIntentReceiver.kt` | Notification inline reply / mark as read |
 | `BlueBubblesFirebaseMessagingService.kt` | FCM (BlueBubbles server mode) |
@@ -428,12 +433,17 @@ Only after Compose covers every feature the Flutter UI provides:
 ### Milestone 2: Native Data Layer
 - [x] Entities moved to `com.bluebubbles.messaging.objectbox` (`ObjectBoxEntities.kt`). The Kotlin model matches `lib/objectbox-model.json` exactly: all 9 entities, every property id, UID, type, flag, index and relation. The `verifyObjectBoxModels` Gradle task now fails any build where the two drift apart. It runs after kapt and before packaging.
 - [x] **The JSON models are not enough.** They don't record the index type. Java's `@Index` on a String defaults to a *hash* index, while Dart's guid indexes are *value* indexes. The JSON files matched, yet the first native build read Dart's value-index entries as hash entries and failed with `FileCorruptException: Illegal index entry size`. Fixed with `@Index(type = IndexType.VALUE)` on `Chat/Message/Attachment.guid`, and with a hash index without `@Unique` on `Contact.stringId`. `verifyObjectBoxSchemas<Variant>` now compares the generated `MyObjectBox.java` with `lib/objectbox.g.dart`, matching every property by UID: type, storage-relevant flags (index type, uniqueness, ID) and index id. It fails the build on any difference. Negative-tested against the broken build: it reports all 4 mismatches.
-- [x] Kotlin opens the store first: `BlueBubblesApplication.onCreate` → `ObjectBox.init`. Dart's existing `Store.isOpen` → `Store.attach` path then takes over. If the native open fails, the app does not crash; Dart opens the store as before.
+- [x] Kotlin opens the store first: `BlueBubblesApplication.onCreate` → `ObjectBox.init`. If the native open fails, the app does not crash; Dart opens the store as before.
+- [x] **One native store instance, shared via `NativeStoreBridge`.** Java's `BoxStore` is *not* in the ObjectBox C registry. Dart's `Store.isOpen(path)` therefore returned false, and Dart silently opened a **second** store on the same files. The logs always said "Opening new ObjectBox store", and `/proc/<pid>/maps` showed `data.mdb` mapped twice. Each instance has its own in-memory ID counter. On Oct 12 this made natively sent messages reuse IDs of 5 Oct-11 messages, and Dart then reused the IDs of 2 native messages. All 7 rows were overwritten locally; the messages had reached their recipients.
+  - **Fix:** Kotlin wraps its store (`obx_store_wrap`) and writes `{pid, pointer}` to `app_flutter/objectbox-native-store.json`. Dart's `Database._initDatabaseMobile` attaches with `Store.fromReference`. If the file belongs to the current process, Dart never opens its own store; if attaching fails, it throws instead.
+  - Kotlin deletes the file before every open. It refuses to open if the C registry shows Dart already opened the store, and it closes its store again if publishing fails.
+  - Expected log line in Dart: "Successfully attached to the native ObjectBox store".
+- [x] Entity IDs are plain `@Id` like Dart's, not `@Id(assignable = true)`. To-one relations declare their target-ID field, so they are not `VIRTUAL`. The schema guard now compares **all** property flags except `NON_PRIMITIVE_TYPE`, which is Java-only, plus entity flags.
 - [x] Open options match Dart: max DB size is 5 GB, as in Dart's `openStore`. The Java default was 1 GB, which would have broken large databases whenever Kotlin opened first.
 - [x] Cross-runtime change notifications: `StoreChanges` registers an `obx_observe` observer through the C API (`obx_store_wrap` on the Java store handle). Commits from Dart therefore update Compose too; Java `store.subscribe()` only sees Java commits.
 - [x] `ChatRepository.observeChats()` / `observeMessages(chatId, limit)`. Only `limit` rows are loaded; paging raises the limit. `ChatListScreen` and `ChatScreen` collect these flows.
 - [x] `ObjectBox.update<T>(id) { }` runs read-modify-write inside a write transaction, so a Kotlin update cannot overwrite a change Dart committed in between. Kotlin code must use it (or `runInTx`) for every update of an existing object.
-- [ ] Device verification on an existing user database (see acceptance).
+- [ ] Device verification on an existing user database (see acceptance). Also confirm `data.mdb` appears **once** in `/proc/<pid>/maps`.
 - **Acceptance:**
   - On a device upgraded from a Flutter-only build, all chats and messages are still present.
   - The Flutter UI works: logs show "Successfully attached to an existing ObjectBox store".
@@ -441,17 +451,42 @@ Only after Compose covers every feature the Flutter UI provides:
   - A message written from Kotlin appears in Flutter.
 
 ### Milestone 3: Native Incoming Pipeline
-- [ ] `IncomingMessageHandler` covers every variant in the inventory, is idempotent by GUID and ordered per chat.
-- [ ] `complete_msg` only after a successful persist.
-- [ ] Attachment downloads.
-- [ ] Notifications through the existing native notification code, with the Dart notification rules ported.
-- [ ] `APNMsg` no longer goes to Dart (foreground or background).
+**Store sharing first:** Dart attaches to Kotlin's store via `Store.fromReference`, using a vendored, patched `objectbox` 4.0.3 in `third_party/objectbox` (see its `OPENBUBBLES_PATCH.md`). Without the patch, Dart's lazy relation loading failed on a Java-owned store ("failed to create store"). That broke the Flutter chat list and caused incoming receipts to be dropped. With one native instance, both sides can write safely.
+
+- [x] `services/messaging/IncomingPipeline.kt` is the entry point for every push (`APNService.receievedMsg`).
+  - Pushes are processed strictly one at a time, in order. A push is completed only after its transaction commits.
+  - Unported types are forwarded to Dart unchanged (`APNService.forwardToDart`, the pre-M3 path).
+  - A supported push that fails natively 2× is also handed to Dart, never dropped.
+- [x] `IncomingMessageHandler.kt` handles these natively:
+  - normal iMessages: text, mentions, formatting, attachments, link previews, replies, effects, scheduled;
+  - standard and emoji tapbacks, edits, unsends;
+  - Delivered/Read (including "read on my other device" → clear unread);
+  - renames, participant changes with group events, mark unread, protocol errors;
+  - NotifyAnyways (now actually persisting `wasDeliveredQuietly = false`), PeerCacheInvalidate;
+  - Typing, MessageReadOnDevice and Unschedule as explicit no-ops.
+- [x] Chat resolution and creation are ported (`ChatResolver.kt`). Saving uses Dart's merge rules for existing rows (`replaceMessage`) and the `addMessage` chat updates (latest date, undelete, unarchive setting, sender known, unread). Delivery certification uses `markCertified`, with the new `certify_delivery`.
+- [x] Attachments are auto-downloaded after saving (`AttachmentDownloader.kt`, honours `autoDownload` / `onlyWifiDownload`).
+- [x] Notifications use the ported mute/filter rules and the existing `CreateIncomingMessageNotification`. The chat open in Compose is not notified (`ActiveChatTracker`).
+- **Still sent to Dart:** SMS, app/extension balloons (polls, games, Apple Pay, stickers), messages with an embedded profile, shared-password invites, IconChange, recycle bin/recover/permanent delete, profile updates, transcript backgrounds, extension updates, SMS activation, SendConfirm, and all non-iMessage pushes (FaceTime, registration, Find My, …).
+- [x] Read receipts (`ReadReceipts.kt`, port of `toggleHasUnread(false)` + `markRead`). They are sent when a chat is opened in Compose, when a message arrives while the chat is open, and from the notification's "Mark As Read" button. Others are notified only if `enablePrivateAPI && (chat.autoSendReadReceipts ?? privateMarkChatAsRead)`, and never in SMS chats or chats with more than 2 participants. Otherwise the receipt only goes to my own devices.
+- [x] Delivered/Read receipts carry no conversation data; they are now handled natively too (previously forwarded to Dart).
+- **Not ported:** notifications for group events.
 - **Acceptance:** With the app killed, an incoming iMessage (text, reaction, edit, unsend, attachment) is stored and notified with no `FlutterEngine` created. Latency is compared against the Milestone 0 baseline.
 
 ### Milestone 4: Native Outgoing Pipeline
-- [ ] `OutgoingMessageQueue` + `SendMessageWorker` (DB id only, binds `APNService`).
-- [ ] Compose `ChatInputArea` and notification inline reply use it.
-- [ ] `execute-rust-send` removed.
+Done ahead of M3: incoming handling, including delivery receipts, stays on Dart for now. Dart matches the natively sent rows by guid/`stagingGuid`.
+- [x] `services/messaging/OutgoingMessageQueue.kt` + `SendMessageWorker.kt`.
+  - The DB is the queue. The worker only gets the message id.
+  - Each chat has an ordered expedited WorkManager chain (`send_chat_<id>`, `APPEND_OR_REPLACE`).
+  - Retryable errors back off up to 8 attempts, always with the same rustpush id. Permanent errors mark the message failed.
+  - The worker waits for `APNService.instance.pushState`, starting the service if needed.
+- [x] Dart parity:
+  - `ensureHandle` (iMessage), `getConversationData` + `sendLastMessage` (`afterGuid`).
+  - One attachment per message, uploaded via `upload_attachment`, with `metadata.rustpush` stored through the new `attachment_to_plist`. An upload is reused on retry.
+  - `dbOnlyLatestMessageDate` is updated.
+- [x] Compose `ChatScreen` and notification inline reply (`InternalIntentReceiver` "ReplyChat") use it. Compose shows "Sending…" / "Not Delivered".
+- [ ] Not yet ported: link previews, embedded profile sharing, effects/replies UI, the Flutter UI's own sends (M5).
+- **Descoped:** SMS forwarding (`isRpSms` chats, `SMSMsg`, SMS relay) is **not** being ported natively and stays in Flutter. Compose hands sends in those chats to the existing Dart path (`MessageSender` → `execute-rust-send`), so `execute-rust-send` and that use of `DartWorker` remain for as long as the Flutter side owns SMS forwarding.
 - **Acceptance:** Messages show "Sending..." at once and become sent on confirm. Messages queued offline or while the app is killed are delivered once connectivity returns, in order.
 
 ### Milestone 5: Flutter Interop
@@ -460,7 +495,7 @@ Only after Compose covers every feature the Flutter UI provides:
 - **Acceptance:** Flutter and Compose can be used interchangeably on the same store with no duplicate or missed messages.
 
 ### Milestone 6: Remaining Headless Paths
-- [ ] SMS relay (`SMSMsg`), notification reply/mark-read and FCM/UnifiedPush/Socket.IO are ported or explicitly removed.
+- [ ] Notification mark-read ported; FCM/UnifiedPush/Socket.IO removed. Notification reply is done (M4). SMS relay (`SMSMsg`) is descoped and stays on Dart.
 - [ ] `DartWorker.kt` / `DartWorkManager.kt` deleted.
 
 ### Milestone 7: Media

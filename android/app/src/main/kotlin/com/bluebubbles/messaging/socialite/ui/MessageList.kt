@@ -2,6 +2,7 @@ package com.bluebubbles.messaging.socialite.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,10 +20,9 @@ fun MessageList(
     chat: Chat,
     isLoading: Boolean,
     onLoadMore: () -> Unit,
-    onAttachmentClick: (Attachment) -> Unit
+    onAttachmentClick: (Attachment) -> Unit,
+    listState: LazyListState = rememberLazyListState()
 ) {
-    val listState = rememberLazyListState()
-
     // Infinite scroll detection
     val loadMore by remember {
         derivedStateOf {
@@ -33,6 +33,24 @@ fun MessageList(
 
     LaunchedEffect(loadMore) {
         if (loadMore) onLoadMore()
+    }
+
+    // Auto-scroll to bottom when new messages arrive if user is looking at the most recent message
+    val newestMessageId = messages.firstOrNull()?.id
+    var previousNewestMessageId by remember(chat.id) { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(newestMessageId) {
+        if (newestMessageId != null) {
+            if (previousNewestMessageId != null && newestMessageId != previousNewestMessageId) {
+                // If user was looking at the bottom of the page (most recent messages),
+                // smoothly scroll to the bottom to reveal the new message.
+                val isAtBottom = listState.firstVisibleItemIndex <= 1
+                if (isAtBottom) {
+                    listState.animateScrollToItem(0)
+                }
+            }
+            previousNewestMessageId = newestMessageId
+        }
     }
 
     LazyColumn(
