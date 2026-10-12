@@ -20,6 +20,7 @@ object ChatRepository {
     private val chatBox: Box<ChatEntity> get() = ObjectBox.store.boxFor()
     private val messageBox: Box<MessageEntity> get() = ObjectBox.store.boxFor()
     private val attachmentBox: Box<AttachmentEntity> get() = ObjectBox.store.boxFor()
+    private val handleBox: Box<HandleEntity> get() = ObjectBox.store.boxFor()
 
     private var flutterDirPath: String = ""
     private lateinit var appContext: android.content.Context
@@ -124,58 +125,120 @@ object ChatRepository {
             .flowOn(Dispatchers.IO)
 
     fun getMessages(chatId: Long, limit: Long = 50, offset: Long = 0): List<Message> {
-        val chatEntity = chatBox.get(chatId) ?: return emptyList()
-        // Wait, the message box has a chat relation? Actually we can query messageBox where chatId == chatId
+        chatBox.get(chatId) ?: return emptyList()
         val messages = messageBox.query {
             apply(MessageEntity_.chatIdId.equal(chatId)) // Relation adds "Id" suffix to the name
             apply(MessageEntity_.associatedMessageGuid.isNull()) // Only normal messages
+            apply(MessageEntity_.dateDeleted.isNull())
             orderDesc(MessageEntity_.dateCreated)
         }.find(offset, limit)
-            
+
+        val names = HashMap<Long, String?>()
+        fun senderName(handleRowId: Long?): String? {
+            if (handleRowId == null || handleRowId == 0L) return null
+            return names.getOrPut(handleRowId) {
+                val handle = handleBox.query { apply(HandleEntity_.originalROWID.equal(handleRowId)) }.findFirst()
+                val address = handle?.address ?: return@getOrPut null
+                val contact = if (::appContext.isInitialized) com.bluebubbles.messaging.utils.ContactUtils.getContactInfo(appContext, address).first else null
+                contact ?: handle.contactRelationId.target?.displayName ?: address
+            }
+        }
+
         return messages.map { msg ->
-            // In ObjectBox, relations need to be queried or accessed if mapped.
-            // Since we didn't map a ToMany for attachments in MessageEntity, we can query AttachmentEntity by messageId
             val attachmentsList = attachmentBox.query {
                 apply(AttachmentEntity_.messageIdId.equal(msg.id))
+                order(AttachmentEntity_.id)
+            }.find().map { a ->
+                val guidDir = java.io.File("$flutterDirPath/attachments/${a.guid ?: ""}")
+                var file = java.io.File(guidDir, a.transferName?.replace("/", "_") ?: "")
+                if (!file.isFile) {
+                    file = guidDir.listFiles()?.firstOrNull { it.isFile && !it.name.endsWith(".part") } ?: file
+                }
+                Attachment(
+                    guid = a.guid ?: "",
+                    mimeType = a.mimeType,
+                    path = file.absolutePath,
+                    id = a.id,
+                    transferName = a.transferName,
+                    isDownloaded = file.isFile,
+                    totalBytes = a.totalBytes ?: 0L,
+                )
+            }
+
+            // Net tapbacks: one per sender (latest wins), removals ("-type") cancel it.
+            val reactionsList = if (msg.guid.isNullOrEmpty()) emptyList() else messageBox.query {
+                apply(MessageEntity_.associatedMessageGuid.equal(msg.guid!!))
+                apply(MessageEntity_.associatedMessageType.notNull())
+                order(MessageEntity_.dateCreated)
             }.find()
-                .map { a ->
-                    val guidDir = java.io.File("$flutterDirPath/attachments/${a.guid ?: ""}")
-                    var file = java.io.File(guidDir, a.transferName?.replace("/", "_") ?: "")
-                    if (!file.isFile) {
-                        file = guidDir.listFiles()?.firstOrNull { it.isFile } ?: file
-                    }
-                    val filePath = file.absolutePath
-                    Attachment(
-                        guid = a.guid ?: "",
-                        mimeType = a.mimeType,
-                        path = filePath
+                .groupBy { if (it.isFromMe == true) -1L else (it.handleId ?: 0L) }
+                .mapNotNull { (_, rows) -> rows.lastOrNull() }
+                .filter { it.associatedMessageType?.startsWith("-") == false }
+                .map { r ->
+                    com.bluebubbles.messaging.socialite.model.Reaction(
+                        type = r.associatedMessageType ?: "",
+                        isIncoming = r.isFromMe != true,
+                        senderName = if (r.isFromMe == true) "You" else senderName(r.handleId),
+                        emoji = r.associatedMessageEmoji,
                     )
                 }
 
-            val reactionsList = messageBox.query {
-                apply(MessageEntity_.associatedMessageGuid.equal(msg.guid ?: ""))
-            }.find().map { r ->
-                com.bluebubbles.messaging.socialite.model.Reaction(
-                    type = r.associatedMessageType ?: "",
-                    isIncoming = r.isFromMe == false,
-                    senderName = null
-                )
+            val replyTo = msg.threadOriginatorGuid?.let { g ->
+                messageBox.query { apply(MessageEntity_.guid.equal(g)) }.findFirst()?.let { o ->
+                    com.bluebubbles.messaging.socialite.model.ReplyPreview(
+                        guid = g,
+                        text = o.text?.takeIf { it.isNotBlank() } ?: if (o.hasAttachments == true) "Attachment" else "Message",
+                        senderName = if (o.isFromMe == true) "You" else senderName(o.handleId),
+                    )
+                }
             }
 
             Message(
                 id = msg.id,
                 guid = msg.guid ?: "",
-                text = msg.text ?: "",
+                text = if ((msg.itemType ?: 0L) != 0L) groupEventText(msg, ::senderName) else msg.text ?: "",
                 isIncoming = msg.isFromMe == false,
                 date = msg.dateCreated?.time ?: 0L,
                 dateDelivered = msg.dateDelivered?.time ?: 0L,
                 dateRead = msg.dateRead?.time ?: 0L,
                 isError = (msg.errorVal ?: 0L) > 0L || msg.guid?.startsWith("error") == true,
                 isSending = msg.guid?.startsWith("temp") == true,
-                senderName = null, // Can map from msg.handleId if we want
+                senderName = if (msg.isFromMe == true) null else senderName(msg.handleId),
                 attachments = attachmentsList,
-                reactions = reactionsList
+                reactions = reactionsList,
+                replyTo = replyTo,
+                linkPreview = linkPreview(msg),
+                isEdited = msg.dateEdited != null,
+                isGroupEvent = (msg.itemType ?: 0L) != 0L,
             )
         }
+    }
+
+    /** Port of Message.groupEventText for the item types written by the incoming pipeline. */
+    private fun groupEventText(msg: MessageEntity, name: (Long?) -> String?): String {
+        val actor = if (msg.isFromMe == true) "You" else name(msg.handleId) ?: "Someone"
+        val other = name(msg.otherHandle) ?: "someone"
+        return when (msg.itemType) {
+            1L -> if (msg.groupActionType == 1L) "$actor removed $other from the conversation" else "$actor added $other to the conversation"
+            2L -> "$actor named the conversation \"${msg.groupTitle ?: ""}\""
+            3L -> if (msg.groupActionType == 1L) "$actor changed the group photo" else "$actor left the conversation"
+            7L -> "$actor changed the chat background"
+            else -> "Conversation updated"
+        }
+    }
+
+    /** Reads the URL preview Dart/Kotlin store in dbPayloadData (PayloadData.toJson, type 0 = url). */
+    private fun linkPreview(msg: MessageEntity): com.bluebubbles.messaging.socialite.model.LinkPreview? {
+        if (msg.balloonBundleId != "com.apple.messages.URLBalloonProvider") return null
+        val json = msg.dbPayloadData?.let { runCatching { org.json.JSONObject(it) }.getOrNull() } ?: return null
+        val data = json.optJSONArray("urlData")?.optJSONObject(0) ?: return null
+        fun nsUrl(key: String) = data.optJSONObject(key)?.optString("NS.relative")?.takeIf { it.isNotEmpty() && it != "null" }
+        val url = nsUrl("URL") ?: nsUrl("originalURL") ?: return null
+        return com.bluebubbles.messaging.socialite.model.LinkPreview(
+            url = url,
+            title = data.optString("title").takeIf { it.isNotEmpty() && it != "null" },
+            summary = data.optString("summary").takeIf { it.isNotEmpty() && it != "null" },
+            imageUrl = data.optJSONObject("imageMetadata")?.optJSONObject("URL")?.optString("NS.relative")?.takeIf { it.startsWith("http") },
+        )
     }
 }

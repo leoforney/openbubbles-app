@@ -180,41 +180,6 @@
         </service>
 
         <receiver android:name=".services.intents.InternalIntentReceiver" />
-        <receiver
-            android:name=".services.intents.ExternalIntentReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.bluebubbles.external.GET_SERVER_URL" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".services.foreground.ForegroundServiceBroadcastReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="restartservice" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".services.intents.AutoStartReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:exported="true"  android:enabled="true"  android:name=".UnifiedPushReceiver">
-            <intent-filter>
-                <action android:name="org.unifiedpush.android.connector.MESSAGE"/>
-                <action android:name="org.unifiedpush.android.connector.UNREGISTERED"/>
-                <action android:name="org.unifiedpush.android.connector.NEW_ENDPOINT"/>
-                <action android:name="org.unifiedpush.android.connector.REGISTRATION_FAILED"/>
-            </intent-filter>
-        </receiver>
 
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
@@ -272,18 +237,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
-
-        <service
-            android:name=".services.firebase.BlueBubblesFirebaseMessagingService"
-            android:directBootAware="true"
-            android:exported="false"
-            android:stopWithTask="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </service>
         <service
             android:name=".services.notifications.NotificationListener"
             android:exported="false"
@@ -292,11 +245,6 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
-        <service
-            android:name=".services.foreground.SocketIOForegroundService"
-            android:foregroundServiceType="remoteMessaging"
-            android:enabled="true"
-            android:exported="true" />
 
         <provider
             android:name="com.google.firebase.provider.FirebaseInitProvider"

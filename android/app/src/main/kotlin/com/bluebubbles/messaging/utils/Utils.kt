@@ -8,8 +8,6 @@ import android.graphics.Canvas
 import android.media.AudioManager
 import android.os.Build
 import androidx.core.graphics.drawable.IconCompat
-import com.bluebubbles.messaging.services.firebase.FirebaseAuthHandler
-import com.bluebubbles.messaging.services.firebase.ServerUrlRequestHandler
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
@@ -43,16 +41,5 @@ object Utils {
         val tempCanvas = Canvas(adaptiveBitmap)
         tempCanvas.drawBitmap(scaledBitmap, (padding / 2).toFloat(), (padding / 2).toFloat(), null)
         return IconCompat.createWithAdaptiveBitmap(adaptiveBitmap)
-    }
-
-    fun getServerUrl(context: Context, result: MethodChannel.Result) {
-        FirebaseAuthHandler().handleMethodCall(MethodCall("", null), object : MethodChannel.Result {
-            override fun success(temp: Any?) {
-                ServerUrlRequestHandler().handleMethodCall(MethodCall("", null), result, context)
-            }
-
-            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
-            override fun notImplemented() {}
-        }, context)
     }
 }

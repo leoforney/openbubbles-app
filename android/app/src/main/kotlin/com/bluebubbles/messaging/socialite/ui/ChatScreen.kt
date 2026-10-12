@@ -60,6 +60,44 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var pendingSendScroll by remember { mutableStateOf(false) }
+    var replyTo by remember(chat.id) { mutableStateOf<Message?>(null) }
+    var actionMessage by remember { mutableStateOf<Message?>(null) }
+    val recorder = remember { com.bluebubbles.messaging.services.messaging.VoiceRecorder(context.applicationContext) }
+    var isRecording by remember { mutableStateOf(false) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { recorder.cancel() } }
+
+    fun scrollToBottomOnSend() {
+        if (listState.firstVisibleItemIndex <= 1) {
+            pendingSendScroll = true
+            coroutineScope.launch { listState.animateScrollToItem(0) }
+        }
+    }
+
+    fun replyTarget(): com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.ReplyTarget? =
+        replyTo?.let { com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.ReplyTarget(it.guid, 0, it.text.length) }
+
+    fun toggleRecording() {
+        if (isRecording) {
+            isRecording = false
+            val file = recorder.stop() ?: return
+            scrollToBottomOnSend()
+            com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.send(
+                context, chat.id, "", listOf(file.absolutePath), replyTarget(), voice = true
+            )
+            replyTo = null
+        } else {
+            isRecording = recorder.start()
+        }
+    }
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) toggleRecording()
+    }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = { uris -> if (uris.isNotEmpty()) selectedMediaUris = selectedMediaUris + uris }
+    )
 
     // Media Pickers
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -186,18 +224,29 @@ fun ChatScreen(
                     cameraLauncher.launch(uri)
                 },
                 onSendClick = {
-                    val isAtBottom = listState.firstVisibleItemIndex <= 1
-                    if (isAtBottom) {
-                        pendingSendScroll = true
-                        coroutineScope.launch {
-                            listState.animateScrollToItem(0)
-                        }
-                    }
-                    val attachmentPaths = selectedMediaUris.mapNotNull { com.bluebubbles.messaging.utils.FilesystemUtils.getAbsolutePath(context, it) }
-                    com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.send(context, chat.id, text, attachmentPaths)
+                    scrollToBottomOnSend()
+                    // All picked media + text go out as one message (a stack on iPhones).
+                    val attachmentPaths = selectedMediaUris.mapNotNull { uriToFile(context, it) }
+                    com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.send(context, chat.id, text, attachmentPaths, replyTarget())
                     text = ""
                     selectedMediaUris = emptyList()
-                }
+                    replyTo = null
+                },
+                replyTo = replyTo?.let { com.bluebubbles.messaging.socialite.model.ReplyPreview(it.guid, it.text.ifEmpty { "Attachment" }, if (it.isIncoming) it.senderName ?: chat.name else "yourself") },
+                onCancelReply = { replyTo = null },
+                isRecording = isRecording,
+                onMicClick = {
+                    if (isRecording || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        toggleRecording()
+                    } else {
+                        micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                    }
+                },
+                onCancelRecording = {
+                    recorder.cancel()
+                    isRecording = false
+                },
+                onFileClick = { filePickerLauncher.launch(arrayOf("*/*")) },
             )
         }
     ) { padding ->
@@ -208,8 +257,24 @@ fun ChatScreen(
                 isLoading = isLoading,
                 onLoadMore = { loadMore() },
                 onAttachmentClick = { viewingAttachment = it },
+                onLongPress = { if (!it.isGroupEvent) actionMessage = it },
                 listState = listState
             )
+
+            actionMessage?.let { target ->
+                MessageActionsDialog(
+                    message = target,
+                    onReact = { reaction, remove ->
+                        com.bluebubbles.messaging.services.messaging.OutgoingMessageQueue.react(context, chat.id, target.guid, reaction, remove)
+                    },
+                    onReply = { replyTo = target },
+                    onCopy = {
+                        val cm = context.getSystemService(android.content.ClipboardManager::class.java)
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("message", target.text))
+                    },
+                    onDismiss = { actionMessage = null },
+                )
+            }
 
             if (viewingAttachment != null) {
                 FullscreenAttachmentViewer(
@@ -219,5 +284,27 @@ fun ChatScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * Returns a real file for a picked URI. Picker/document URIs often have no file path, so their
+ * content is copied to the cache under the original display name (the name the recipient sees).
+ */
+private fun uriToFile(context: android.content.Context, uri: Uri): String? {
+    com.bluebubbles.messaging.utils.FilesystemUtils.getAbsolutePath(context, uri)?.let { if (java.io.File(it).canRead()) return it }
+    return try {
+        var name: String? = null
+        context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) name = c.getString(0)
+        }
+        val safe = (name ?: "attachment").replace("/", "_")
+        val dir = java.io.File(java.io.File(context.cacheDir, "outgoing"), java.util.UUID.randomUUID().toString()).apply { mkdirs() }
+        val out = java.io.File(dir, safe)
+        context.contentResolver.openInputStream(uri)?.use { input -> out.outputStream().use { input.copyTo(it) } } ?: return null
+        out.absolutePath
+    } catch (e: Exception) {
+        android.util.Log.e("ChatScreen", "Cannot read $uri", e)
+        null
     }
 }

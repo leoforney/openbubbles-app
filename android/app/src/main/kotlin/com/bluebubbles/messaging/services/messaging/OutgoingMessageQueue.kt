@@ -9,7 +9,6 @@ import com.bluebubbles.messaging.objectbox.ChatEntity_
 import com.bluebubbles.messaging.objectbox.MessageEntity
 import com.bluebubbles.messaging.objectbox.MessageEntity_
 import com.bluebubbles.messaging.objectbox.ObjectBox
-import com.bluebubbles.messaging.services.backend_ui_interop.MessageSender
 import com.bluebubbles.messaging.services.rustpush.APNClient
 import com.bluebubbles.messaging.services.rustpush.APNService
 import io.objectbox.kotlin.boxFor
@@ -34,6 +33,9 @@ import uniffi.rust_lib_bluebubbles.NativeMessageType
 import uniffi.rust_lib_bluebubbles.NativeMsgException
 import uniffi.rust_lib_bluebubbles.NativeNormalMessage
 import uniffi.rust_lib_bluebubbles.NativeProgressCallback
+import uniffi.rust_lib_bluebubbles.NativeReactMessageType
+import uniffi.rust_lib_bluebubbles.NativeReactMessage
+import uniffi.rust_lib_bluebubbles.NativeReaction
 import uniffi.rust_lib_bluebubbles.NativePushState
 import uniffi.rust_lib_bluebubbles.NativeTextFormat
 import uniffi.rust_lib_bluebubbles.attachmentFromPlist
@@ -74,6 +76,9 @@ object OutgoingMessageQueue {
 
     private const val SERVICE_WAIT_MS = 30_000L
 
+    /** Max wait for Apple to confirm a send before retrying (uploads happen before this starts). */
+    private const val SEND_TIMEOUT_MS = 45_000L
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val chatLocks = ConcurrentHashMap<Long, Mutex>()
 
@@ -83,79 +88,118 @@ object OutgoingMessageQueue {
 
     enum class Outcome { SENT, FAILED, RETRY, NOTHING_TO_DO }
 
+    /** What a message being sent replies to (inline reply / thread). */
+    data class ReplyTarget(val guid: String, val part: Int = 0, val textLength: Int = 0)
+
     /**
-     * Queues a message from the UI. Like Dart, each attachment is sent as its own message, followed
-     * by the text. Returns immediately; the rows appear in the database (and UI) right away.
+     * Queues a message from the UI. All attachments and the text go into ONE iMessage, which
+     * iPhones show as a stack/grid with the caption below (Flutter used to send one message per
+     * attachment). Returns immediately; the row appears in the database (and UI) right away.
      */
-    fun send(context: Context, chatId: Long, text: String, attachmentPaths: List<String>) {
+    fun send(context: Context, chatId: Long, text: String, attachmentPaths: List<String>,
+             replyTo: ReplyTarget? = null, voice: Boolean = false) {
         val appContext = context.applicationContext
         scope.launch {
             try {
-                enqueue(appContext, chatId, text, attachmentPaths)
+                enqueue(appContext, chatId, text, attachmentPaths, replyTo, voice)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to queue message for chat $chatId", e)
             }
         }
     }
 
-    suspend fun enqueue(context: Context, chatId: Long, text: String, attachmentPaths: List<String>): List<Long> = withContext(Dispatchers.IO) {
+    suspend fun enqueue(context: Context, chatId: Long, text: String, attachmentPaths: List<String>,
+                        replyTo: ReplyTarget? = null, voice: Boolean = false): List<Long> = withContext(Dispatchers.IO) {
         val chat = chatBox.get(chatId) ?: run {
             Log.e(TAG, "Cannot send: chat $chatId not found")
             return@withContext emptyList()
         }
-        if (chat.isRpSms == true) {
-            // SMS forwarding is not ported yet; keep using the Dart pipeline for these chats.
-            MessageSender.sendMessage(context, chatId, text, attachmentPaths)
-            return@withContext emptyList()
-        }
+        val smsChat = chat.isRpSms == true // SMS relay was removed; these sends fail visibly below
 
         val attachmentsDir = File(context.getDir("flutter", Context.MODE_PRIVATE), "attachments")
-        val now = System.currentTimeMillis()
-        val created = mutableListOf<Long>()
-
-        attachmentPaths.forEachIndexed { i, path ->
+        val attachments = attachmentPaths.mapNotNull { path ->
             val source = File(path)
             if (!source.isFile) {
                 Log.e(TAG, "Skipping missing attachment $path")
-                return@forEachIndexed
+                return@mapNotNull null
             }
             val attGuid = newTempGuid()
             val name = source.name.replace("/", "_").replace("\\", "_")
             val dest = File(File(attachmentsDir, attGuid), name)
             dest.parentFile?.mkdirs()
             source.copyTo(dest, overwrite = true)
-
-            created += insertPending(chat, text = null, dateMs = now + i, attachment = AttachmentEntity(
+            val mime = mimeFor(name)
+            AttachmentEntity(
                 guid = attGuid,
                 transferName = name,
-                mimeType = URLConnection.guessContentTypeFromName(name) ?: "application/octet-stream",
+                mimeType = mime,
+                uti = utiFor(mime),
                 totalBytes = dest.length(),
                 isOutgoing = true,
                 hasLivePhoto = false,
-            ))
+            )
         }
-        if (text.isNotBlank()) {
-            created += insertPending(chat, text = text, dateMs = now + attachmentPaths.size, attachment = null)
+        if (attachments.isEmpty() && text.isBlank()) return@withContext emptyList()
+
+        val now = System.currentTimeMillis()
+        val id = insertPending(chat, now, attachments) { msg ->
+            msg.text = text.takeIf { it.isNotBlank() }
+            if (replyTo != null) {
+                msg.threadOriginatorGuid = replyTo.guid
+                msg.threadOriginatorPart = "${replyTo.part}:0:${replyTo.textLength}"
+            }
+            if (voice) msg.itemType = 0 // voice flag is derived from the attachment when sending
         }
-
-        ObjectBox.update<ChatEntity>(chat.id) { it.dbOnlyLatestMessageDate = Date(now + attachmentPaths.size) }
-
-        for (id in created) SendMessageWorker.enqueue(context, chat.id, id)
-        created
+        if (smsChat) {
+            markFailed(id, "SMS forwarding is no longer supported")
+            return@withContext listOf(id)
+        }
+        if (voice) voiceMessages.add(id)
+        ObjectBox.update<ChatEntity>(chat.id) { it.dbOnlyLatestMessageDate = Date(now) }
+        SendMessageWorker.enqueue(context, chat.id, id)
+        listOf(id)
     }
 
-    private fun insertPending(chat: ChatEntity, text: String?, dateMs: Long, attachment: AttachmentEntity?): Long {
+    /**
+     * Sends (or removes) a tapback. [reaction] is a ReactionTypes value ("love", "like", ...) or
+     * any emoji. Stored like Dart's reflected reaction so both UIs render it right away.
+     */
+    fun react(context: Context, chatId: Long, targetGuid: String, reaction: String, remove: Boolean, targetPart: Int = 0) {
+        val appContext = context.applicationContext
+        scope.launch {
+            try {
+                val chat = chatBox.get(chatId) ?: return@launch
+                if (chat.isRpSms == true) return@launch // SMS relay was removed
+                val standard = reaction in STANDARD_REACTIONS
+                val type = if (standard) reaction else "emoji"
+                val now = System.currentTimeMillis()
+                val id = insertPending(chat, now, emptyList()) { msg ->
+                    msg.associatedMessageGuid = targetGuid
+                    msg.associatedMessagePart = targetPart.toLong()
+                    msg.associatedMessageType = if (remove) "-$type" else type
+                    msg.associatedMessageEmoji = if (standard) null else reaction
+                }
+                SendMessageWorker.enqueue(appContext, chat.id, id)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to queue reaction for $targetGuid", e)
+            }
+        }
+    }
+
+    private val STANDARD_REACTIONS = setOf("love", "like", "dislike", "laugh", "emphasize", "question")
+    private val voiceMessages = java.util.Collections.newSetFromMap(ConcurrentHashMap<Long, Boolean>())
+
+    private fun insertPending(chat: ChatEntity, dateMs: Long, attachments: List<AttachmentEntity>, configure: (MessageEntity) -> Unit): Long {
         return ObjectBox.store.callInTx {
             val msg = MessageEntity(
                 guid = newTempGuid(),
                 stagingGuid = UUID.randomUUID().toString().uppercase(),
-                text = text,
                 isFromMe = true,
                 handleId = 0,
                 dateCreated = Date(dateMs),
                 itemType = 0,
                 hasDdResults = false,
-                hasAttachments = attachment != null,
+                hasAttachments = attachments.isNotEmpty(),
                 hasReactions = false,
                 hasApplePayloadData = false,
                 wasDeliveredQuietly = false,
@@ -168,11 +212,12 @@ object OutgoingMessageQueue {
                 groupActionType = 0,
                 ckSyncState = false,
             )
+            configure(msg)
             msg.chatId.target = chat
             val id = messageBox.put(msg)
-            if (attachment != null) {
-                attachment.messageId.targetId = id
-                attachmentBox.put(attachment)
+            for (att in attachments) {
+                att.messageId.targetId = id
+                attachmentBox.put(att)
             }
             id
         }
@@ -198,35 +243,73 @@ object OutgoingMessageQueue {
                 if (handles.isEmpty()) return@withLock retryOrFail(messageId, attempt, "No registered handles")
                 val sender = ChatResolver.ensureHandle(context, chat, handles)
                 val conversation = ChatResolver.conversationData(context, chat, handles, before = msg.dateCreated ?: java.util.Date(), excludeMessageId = msg.id)
+                val profile = ProfileSharing.forChat(context, chat)
 
-                val parts = mutableListOf<NativeIndexedMessagePart>()
-                val attachment = attachmentBox.query { apply(AttachmentEntity_.messageIdId.equal(messageId)) }.findFirst()
-                if (attachment != null) {
-                    val uploaded = uploadedAttachment(attachment) ?: upload(context, state, attachment)
-                    parts += NativeIndexedMessagePart(NativeMessagePart.Attachment(uploaded), null, null)
+                val message: NativeMessage
+                var sentParts: List<NativeIndexedMessagePart> = emptyList()
+                var linkPayload: String? = null
+                val reactionType = msg.associatedMessageType
+                val reactionTarget = msg.associatedMessageGuid
+                if (reactionType != null && reactionTarget != null) {
+                    val remove = reactionType.startsWith("-")
+                    val base = reactionType.removePrefix("-")
+                    val reaction = when (base) {
+                        "love" -> NativeReaction.Heart
+                        "like" -> NativeReaction.Like
+                        "dislike" -> NativeReaction.Dislike
+                        "laugh" -> NativeReaction.Laugh
+                        "emphasize" -> NativeReaction.Emphasize
+                        "question" -> NativeReaction.Question
+                        else -> NativeReaction.Emoji(msg.associatedMessageEmoji ?: return@withLock markFailed(messageId, "Missing emoji"))
+                    }
+                    val targetText = messageBox.query { apply(MessageEntity_.guid.equal(reactionTarget)) }.findFirst()?.text ?: ""
+                    message = NativeMessage.React(NativeReactMessage(
+                        toUuid = reactionTarget,
+                        toPart = (msg.associatedMessagePart ?: 0L).toULong(),
+                        reaction = NativeReactMessageType.React(reaction, !remove),
+                        toText = targetText,
+                        embeddedProfile = profile,
+                    ))
+                } else {
+                    val parts = mutableListOf<NativeIndexedMessagePart>()
+                    val attachments = attachmentBox.query {
+                        apply(AttachmentEntity_.messageIdId.equal(messageId))
+                        order(AttachmentEntity_.id)
+                    }.find()
+                    for (att in attachments) {
+                        val uploaded = uploadedAttachment(att) ?: upload(context, state, att)
+                        parts += NativeIndexedMessagePart(NativeMessagePart.Attachment(uploaded), null, null)
+                    }
+                    msg.text?.takeIf { it.isNotEmpty() }?.let {
+                        parts += NativeIndexedMessagePart(NativeMessagePart.Text(it, NativeTextFormat.Flags(false, false, false, false)), null, null)
+                    }
+                    if (parts.isEmpty()) return@withLock markFailed(messageId, "Empty message")
+                    val link = if (attachments.isEmpty()) msg.text?.let { LinkPreviews.build(it) } else null
+                    linkPayload = link?.let { MessageFormats.linkPayload(it) }
+                    sentParts = parts
+                    message = NativeMessage.Message(NativeNormalMessage(
+                        parts = parts,
+                        effect = msg.expressiveSendStyleId,
+                        replyGuid = msg.threadOriginatorGuid,
+                        replyPart = if (msg.threadOriginatorGuid != null) msg.threadOriginatorPart else null,
+                        service = NativeMessageType.IMessage,
+                        subject = msg.subject?.takeIf { it.isNotEmpty() },
+                        app = null,
+                        linkMeta = link,
+                        voice = messageId in voiceMessages || attachments.singleOrNull()?.transferName?.startsWith(VOICE_PREFIX) == true,
+                        scheduled = null,
+                        embeddedProfile = profile,
+                    ))
                 }
-                msg.text?.takeIf { it.isNotEmpty() }?.let {
-                    parts += NativeIndexedMessagePart(NativeMessagePart.Text(it, NativeTextFormat.Flags(false, false, false, false)), null, null)
-                }
-                if (parts.isEmpty()) return@withLock markFailed(messageId, "Empty message")
-
-                val normal = NativeNormalMessage(
-                    parts = parts,
-                    effect = msg.expressiveSendStyleId,
-                    replyGuid = msg.threadOriginatorGuid,
-                    replyPart = if (msg.threadOriginatorGuid != null) msg.threadOriginatorPart else null,
-                    service = NativeMessageType.IMessage,
-                    subject = msg.subject?.takeIf { it.isNotEmpty() },
-                    app = null,
-                    linkMeta = null,
-                    voice = false,
-                    scheduled = null,
-                    embeddedProfile = null,
-                )
-                val inst = newMessageInst(conversation, sender, NativeMessage.Message(normal))
+                val inst = newMessageInst(conversation, sender, message)
                 inst.id = rustId
-                val sent = state.send(inst)
-                markSent(context, messageId, rustId, sent.sentTimestamp.toLong())
+                // Never let one unacknowledged send block the chat's queue: give up after
+                // SEND_TIMEOUT_MS and retry with the same id (recipients deduplicate by id). The
+                // abandoned attempt may still complete in Rust; that is harmless for the same reason.
+                val sent = withTimeoutOrNull(SEND_TIMEOUT_MS) { state.send(inst) }
+                    ?: return@withLock retryOrFail(messageId, attempt, "Apple did not confirm the send in time")
+                voiceMessages.remove(messageId)
+                markSent(context, messageId, rustId, sent.sentTimestamp.toLong(), sentParts, linkPayload)
                 Outcome.SENT
             } catch (e: NativeMsgException.Retryable) {
                 Log.w(TAG, "Retryable send failure for $rustId (attempt $attempt)", e)
@@ -242,6 +325,39 @@ object OutgoingMessageQueue {
                 markFailed(messageId, e.message ?: e.javaClass.simpleName)
             }
         }
+    }
+
+    /** Voice notes are recorded under this file name prefix (see VoiceRecorder). */
+    const val VOICE_PREFIX = "Audio Message"
+
+    private fun mimeFor(name: String): String {
+        val lower = name.lowercase()
+        return when {
+            lower.endsWith(".heic") -> "image/heic"
+            lower.endsWith(".heif") -> "image/heif"
+            lower.endsWith(".m4a") -> "audio/mp4"
+            lower.endsWith(".caf") -> "audio/x-caf"
+            lower.endsWith(".mov") -> "video/quicktime"
+            else -> URLConnection.guessContentTypeFromName(name) ?: "application/octet-stream"
+        }
+    }
+
+    /** Apple UTIs for common types; Apple clients use these to decide how to render attachments. */
+    private fun utiFor(mime: String): String = when {
+        mime == "image/jpeg" -> "public.jpeg"
+        mime == "image/png" -> "public.png"
+        mime == "image/gif" -> "com.compuserve.gif"
+        mime == "image/heic" -> "public.heic"
+        mime == "image/heif" -> "public.heif"
+        mime == "image/webp" -> "org.webmproject.webp"
+        mime == "video/mp4" -> "public.mpeg-4"
+        mime == "video/quicktime" -> "com.apple.quicktime-movie"
+        mime == "audio/mp4" -> "com.apple.m4a-audio"
+        mime == "audio/x-caf" -> "com.apple.coreaudio-format"
+        mime == "audio/mpeg" -> "public.mp3"
+        mime == "application/pdf" -> "com.adobe.pdf"
+        mime.startsWith("text/") -> "public.plain-text"
+        else -> "public.data"
     }
 
     // --- attachments -----------------------------------------------------------------------------
@@ -281,35 +397,49 @@ object OutgoingMessageQueue {
 
     // --- state transitions -------------------------------------------------------------------
 
-    private fun markSent(context: Context, messageId: Long, rustId: String, sentTimestampMs: Long) {
-        // Like Dart's replaceAttachment: rename the attachment folder to the final guid first.
-        val att = attachmentBox.query { apply(AttachmentEntity_.messageIdId.equal(messageId)) }.findFirst()
-        var newAttGuid: String? = null
-        if (att != null && att.guid?.startsWith("temp") == true) {
-            newAttGuid = "${rustId}_0" // reflectMessageDyn: "${msgId}_$fieldIdx"
-            val root = File(context.getDir("flutter", Context.MODE_PRIVATE), "attachments")
-            val from = File(root, att.guid!!)
-            val to = File(root, newAttGuid)
+    private fun markSent(context: Context, messageId: Long, rustId: String, sentTimestampMs: Long,
+                         parts: List<NativeIndexedMessagePart>, linkPayload: String?) {
+        // Like Dart's reflectMessageDyn/replaceAttachment: attachment i gets guid "<id>_<i>" and its
+        // folder is renamed to match. Renames happen before the transaction (filesystem first).
+        val root = File(context.getDir("flutter", Context.MODE_PRIVATE), "attachments")
+        val attachments = attachmentBox.query {
+            apply(AttachmentEntity_.messageIdId.equal(messageId))
+            order(AttachmentEntity_.id)
+        }.find()
+        val newGuids = HashMap<Long, String>()
+        attachments.forEachIndexed { i, att ->
+            val old = att.guid ?: return@forEachIndexed
+            if (!old.startsWith("temp")) return@forEachIndexed
+            val target = "${rustId}_$i"
+            val from = File(root, old)
+            val to = File(root, target)
             if (from.isDirectory && !to.exists() && !from.renameTo(to)) {
                 Log.w(TAG, "Could not rename attachment folder ${from.name} -> ${to.name}")
-                newAttGuid = null
+                return@forEachIndexed
             }
+            newGuids[att.id] = target
         }
+        val body = if (parts.isNotEmpty()) MessageFormats.partsToBody(parts, rustId, null) else null
         ObjectBox.store.runInTx {
             val msg = messageBox.get(messageId) ?: return@runInTx
             msg.guid = rustId
             msg.stagingGuid = null
             msg.errorVal = 0
             if (sentTimestampMs > 0) msg.dateCreated = Date(sentTimestampMs)
+            if (body != null) msg.dbAttributedBody = MessageFormats.bodyList(body.attributedBody)
+            if (linkPayload != null) {
+                msg.balloonBundleId = MessageFormats.URL_BALLOON
+                msg.dbPayloadData = linkPayload
+            }
             messageBox.put(msg)
-            if (att != null && newAttGuid != null) {
-                attachmentBox.get(att.id)?.let { a ->
-                    a.guid = newAttGuid
+            for ((attId, newGuid) in newGuids) {
+                attachmentBox.get(attId)?.let { a ->
+                    a.guid = newGuid
                     attachmentBox.put(a)
                 }
             }
         }
-        Log.i(TAG, "Sent $rustId")
+        Log.i(TAG, "Sent $rustId (${attachments.size} attachment(s))")
         guardAgainstStaleOverwrite(messageId, rustId)
     }
 
@@ -334,8 +464,11 @@ object OutgoingMessageQueue {
         }
     }
 
-    private fun retryOrFail(messageId: Long, attempt: Int, reason: String): Outcome =
-        if (attempt + 1 >= MAX_ATTEMPTS) markFailed(messageId, reason) else Outcome.RETRY
+    private fun retryOrFail(messageId: Long, attempt: Int, reason: String): Outcome {
+        if (attempt + 1 >= MAX_ATTEMPTS) return markFailed(messageId, reason)
+        Log.w(TAG, "Message $messageId not sent yet (attempt ${attempt + 1}/$MAX_ATTEMPTS): $reason; retrying")
+        return Outcome.RETRY
+    }
 
     /** Same shape as Dart's handleSendError: "temp" in the guid becomes "error-<reason>". */
     private fun markFailed(messageId: Long, reason: String): Outcome {

@@ -9,7 +9,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.bluebubbles.messaging.services.backend_ui_interop.MethodCallHandler
-import com.bluebubbles.messaging.services.foreground.ForegroundServiceBroadcastReceiver
 import com.bluebubbles.messaging.Constants
 import com.bluebubbles.messaging.services.extension.KeyboardViewFactory
 import com.bluebubbles.messaging.services.extension.LiveExtensionFactory
@@ -68,16 +67,6 @@ class MainActivity : FlutterFragmentActivity(), ComponentCallbacks2 {
         } else {
             Log.d(Constants.logTag, "BlueBubbles activity is being destroyed by the system")
 
-            val prefs = applicationContext.getSharedPreferences("FlutterSharedPreferences", 0)
-            val keepAppAlive: Boolean = prefs.getBoolean("flutter.keepAppAlive", false)
-
-            // Create an intent to start the foreground service
-            if (keepAppAlive) {
-                Log.d(Constants.logTag, "Creating broadcast intent to restart the foreground service...")
-                val broadcastIntent = Intent(this, ForegroundServiceBroadcastReceiver::class.java)
-                broadcastIntent.setAction("restartservice");
-                sendBroadcast(broadcastIntent);
-            }
         }
 
         try {

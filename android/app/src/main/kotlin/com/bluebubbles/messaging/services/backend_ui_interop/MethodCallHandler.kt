@@ -13,17 +13,12 @@ import com.bluebubbles.messaging.services.facetime.FaceTimeCallStateHandler
 import com.bluebubbles.messaging.services.facetime.FaceTimeGetActiveCallHandler
 import com.bluebubbles.messaging.services.facetime.FaceTimeLaunchHandler
 import com.bluebubbles.messaging.services.filesystem.GetContentUriPathHandler
-import com.bluebubbles.messaging.services.firebase.FirebaseAuthHandler
-import com.bluebubbles.messaging.services.firebase.FirebaseDeleteTokenHandler
-import com.bluebubbles.messaging.services.firebase.ServerUrlRequestHandler
-import com.bluebubbles.messaging.services.firebase.UpdateNextRestartHandler
 import com.bluebubbles.messaging.services.notifications.CreateIncomingFaceTimeNotification
 import com.bluebubbles.messaging.services.notifications.CreateIncomingMessageNotification
 import com.bluebubbles.messaging.services.notifications.DeleteNotificationHandler
 import com.bluebubbles.messaging.services.notifications.NotificationChannelHandler
 import com.bluebubbles.messaging.services.notifications.NotificationListenerPermissionRequestHandler
 import com.bluebubbles.messaging.services.notifications.StartNotificationListenerHandler
-import com.bluebubbles.messaging.services.notifications.UnifiedPushHandler
 import com.bluebubbles.messaging.services.rustpush.NotifyNativeConfiguredHandler
 import com.bluebubbles.messaging.services.rustpush.SIMInfoQuery
 import com.bluebubbles.messaging.services.rustpush.SMSAuthGateway
@@ -36,8 +31,6 @@ import com.bluebubbles.messaging.services.system.OpenConversationNotificationSet
 import com.bluebubbles.messaging.services.system.OpenExistingContactRequestHandler
 import com.bluebubbles.messaging.services.system.PushShareTargetsHandler
 import com.bluebubbles.messaging.services.system.StartGoogleDuoRequestHandler
-import com.bluebubbles.messaging.services.foreground.StartForegroundServiceHandler
-import com.bluebubbles.messaging.services.foreground.StopForegroundServiceHandler
 import com.bluebubbles.messaging.services.notifications.CreateMissedFaceTimeNotification
 import com.bluebubbles.messaging.services.rustpush.AppleAccountLoginHandler
 import com.bluebubbles.messaging.services.rustpush.EAPAKAGateway
@@ -83,15 +76,21 @@ class MethodCallHandler {
         }
     }
 
+    private val RETIRED_METHODS = setOf(
+        "UnifiedPushHandler", "firebase-auth", "firebase-delete-token", "get-server-url",
+        "set-next-restart", "start-foreground-service", "stop-foreground-service",
+    )
+
     fun methodCallHandler(call: MethodCall, result: MethodChannel.Result, context: Context) {
         Log.d(Constants.logTag, "Received new method call from Dart with method ${call.method}")
         when(call.method) {
-            UnifiedPushHandler.tag -> UnifiedPushHandler().handleMethodCall(call, result, context)
-            FirebaseAuthHandler.tag -> FirebaseAuthHandler().handleMethodCall(call, result, context)
-            FirebaseDeleteTokenHandler.tag -> FirebaseDeleteTokenHandler().handleMethodCall(call, result, context)
+            // BlueBubbles server mode (FCM, UnifiedPush, Socket.IO foreground service) was removed.
+            // Flutter's server-mode code may still call these; answer as no-ops instead of erroring.
+            in RETIRED_METHODS -> {
+                Log.d(Constants.logTag, "Ignoring retired method ${call.method}")
+                result.success(null)
+            }
             NotificationChannelHandler.tag -> NotificationChannelHandler().handleMethodCall(call, result, context)
-            ServerUrlRequestHandler.tag -> ServerUrlRequestHandler().handleMethodCall(call, result, context)
-            UpdateNextRestartHandler.tag -> UpdateNextRestartHandler().handleMethodCall(call, result, context)
             BrowserLaunchRequestHandler.tag -> BrowserLaunchRequestHandler().handleMethodCall(call, result, context)
             PushShareTargetsHandler.tag -> PushShareTargetsHandler().handleMethodCall(call, result, context)
             NewContactFormRequestHandler.tag -> NewContactFormRequestHandler().handleMethodCall(call, result, context)
@@ -110,8 +109,6 @@ class MethodCallHandler {
             CreateIncomingMessageNotification.tag -> CreateIncomingMessageNotification().handleMethodCall(call, result, context)
             CreateIncomingFaceTimeNotification.tag -> CreateIncomingFaceTimeNotification().handleMethodCall(call, result, context)
             DeleteNotificationHandler.tag -> DeleteNotificationHandler().handleMethodCall(call, result, context)
-            StartForegroundServiceHandler.tag -> StartForegroundServiceHandler().handleMethodCall(call, result, context)
-            StopForegroundServiceHandler.tag -> StopForegroundServiceHandler().handleMethodCall(call, result, context)
             GetNativeHandleHandler.tag -> GetNativeHandleHandler().handleMethodCall(call, result, context)
             NotifyNativeConfiguredHandler.tag -> NotifyNativeConfiguredHandler().handleMethodCall(call, result, context)
             SMSAuthGateway.tag -> SMSAuthGateway().handleMethodCall(call, result, context)

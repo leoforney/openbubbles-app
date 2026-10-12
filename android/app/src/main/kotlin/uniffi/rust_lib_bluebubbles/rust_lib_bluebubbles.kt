@@ -1209,6 +1209,10 @@ internal open class UniffiVTableCallbackInterfaceSpecialAppleAuthCallback(
 
 
 
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -1228,6 +1232,8 @@ internal interface IntegrityCheckingUniffiLib : Library {
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_attachment_to_plist(
 ): Short
+fun uniffi_rust_lib_bluebubbles_checksum_func_decode_profile_message(
+): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_do_lock(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_finish_unlock(
@@ -1237,6 +1243,8 @@ fun uniffi_rust_lib_bluebubbles_checksum_func_get_carrier(
 fun uniffi_rust_lib_bluebubbles_checksum_func_init_native(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_is_locked(
+): Short
+fun uniffi_rust_lib_bluebubbles_checksum_func_new_link_meta(
 ): Short
 fun uniffi_rust_lib_bluebubbles_checksum_func_new_message_inst(
 ): Short
@@ -1673,6 +1681,8 @@ fun uniffi_rust_lib_bluebubbles_fn_func_attachment_from_plist(`data`: RustBuffer
 ): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_func_attachment_to_plist(`attachment`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+fun uniffi_rust_lib_bluebubbles_fn_func_decode_profile_message(`s`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_func_do_lock(uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_func_finish_unlock(uniffi_out_err: UniffiRustCallStatus, 
@@ -1683,6 +1693,8 @@ fun uniffi_rust_lib_bluebubbles_fn_func_init_native(`dir`: RustBuffer.ByValue,`h
 ): Unit
 fun uniffi_rust_lib_bluebubbles_fn_func_is_locked(uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+fun uniffi_rust_lib_bluebubbles_fn_func_new_link_meta(`originalUrl`: RustBuffer.ByValue,`url`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`summary`: RustBuffer.ByValue,`icon`: RustBuffer.ByValue,`image`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Pointer
 fun uniffi_rust_lib_bluebubbles_fn_func_new_message_inst(`conversation`: RustBuffer.ByValue,`sender`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 fun uniffi_rust_lib_bluebubbles_fn_func_recover_keychain(uniffi_out_err: UniffiRustCallStatus, 
@@ -1824,6 +1836,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_attachment_to_plist() != 26338.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_func_decode_profile_message() != 41518.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_do_lock() != 42972.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1837,6 +1852,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_is_locked() != 51144.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_rust_lib_bluebubbles_checksum_func_new_link_meta() != 2219.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_rust_lib_bluebubbles_checksum_func_new_message_inst() != 65099.toShort()) {
@@ -7856,6 +7874,45 @@ public object FfiConverterTypeNativeIndexedMessagePart: FfiConverterRustBuffer<N
 
 
 
+data class NativeLinkImage (
+    var `mimeType`: kotlin.String, 
+    var `data`: kotlin.ByteArray, 
+    /**
+     * Remote URL the image was fetched from.
+     */
+    var `url`: kotlin.String
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNativeLinkImage: FfiConverterRustBuffer<NativeLinkImage> {
+    override fun read(buf: ByteBuffer): NativeLinkImage {
+        return NativeLinkImage(
+            FfiConverterString.read(buf),
+            FfiConverterByteArray.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NativeLinkImage) = (
+            FfiConverterString.allocationSize(value.`mimeType`) +
+            FfiConverterByteArray.allocationSize(value.`data`) +
+            FfiConverterString.allocationSize(value.`url`)
+    )
+
+    override fun write(value: NativeLinkImage, buf: ByteBuffer) {
+            FfiConverterString.write(value.`mimeType`, buf)
+            FfiConverterByteArray.write(value.`data`, buf)
+            FfiConverterString.write(value.`url`, buf)
+    }
+}
+
+
+
 data class NativeMessageInst (
     var `id`: kotlin.String, 
     var `sender`: kotlin.String?, 
@@ -10985,6 +11042,38 @@ public object FfiConverterOptionalTypeNativeConversationData: FfiConverterRustBu
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeNativeLinkImage: FfiConverterRustBuffer<NativeLinkImage?> {
+    override fun read(buf: ByteBuffer): NativeLinkImage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNativeLinkImage.read(buf)
+    }
+
+    override fun allocationSize(value: NativeLinkImage?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNativeLinkImage.allocationSize(value)
+        }
+    }
+
+    override fun write(value: NativeLinkImage?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNativeLinkImage.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeNativeMmcsFile: FfiConverterRustBuffer<NativeMmcsFile?> {
     override fun read(buf: ByteBuffer): NativeMmcsFile? {
         if (buf.get().toInt() == 0) {
@@ -11527,6 +11616,19 @@ public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.Str
     )
     }
     
+
+        /**
+         * Decodes the profile Dart stores in settings (`shareProfileMessage`), same as FRB's decode_profile_message.
+         */
+    @Throws(NativeMsgException::class) fun `decodeProfileMessage`(`s`: kotlin.String): NativeShareProfile {
+            return FfiConverterTypeNativeShareProfile.lift(
+    uniffiRustCallWithError(NativeMsgException) { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_decode_profile_message(
+        FfiConverterString.lower(`s`),_status)
+}
+    )
+    }
+    
  fun `doLock`()
         = 
     uniffiRustCall() { _status ->
@@ -11564,6 +11666,18 @@ public object FfiConverterMapStringString: FfiConverterRustBuffer<Map<kotlin.Str
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_is_locked(
         _status)
+}
+    )
+    }
+    
+
+        /**
+         * Builds an outgoing rich link preview, mirroring Dart's sendMessage (rustpush_service.dart).
+         */ fun `newLinkMeta`(`originalUrl`: kotlin.String, `url`: kotlin.String, `title`: kotlin.String?, `summary`: kotlin.String?, `icon`: NativeLinkImage?, `image`: NativeLinkImage?): NativeLinkMeta {
+            return FfiConverterTypeNativeLinkMeta.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_rust_lib_bluebubbles_fn_func_new_link_meta(
+        FfiConverterString.lower(`originalUrl`),FfiConverterString.lower(`url`),FfiConverterOptionalString.lower(`title`),FfiConverterOptionalString.lower(`summary`),FfiConverterOptionalTypeNativeLinkImage.lower(`icon`),FfiConverterOptionalTypeNativeLinkImage.lower(`image`),_status)
 }
     )
     }

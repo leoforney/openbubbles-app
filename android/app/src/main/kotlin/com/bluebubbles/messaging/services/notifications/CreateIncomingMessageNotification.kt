@@ -132,6 +132,9 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
             val file = java.io.File(attachmentPath)
             if (file.exists()) {
                 val uri = androidx.core.content.FileProvider.getUriForFile(context, context.getString(R.string.file_provider), file)
+                // The shade (SystemUI) renders the inline image and needs read access to our URI,
+                // otherwise Android silently falls back to the text.
+                context.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 notifMessage.setData(attachmentType, uri)
             }
         }

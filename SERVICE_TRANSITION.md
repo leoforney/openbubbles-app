@@ -489,18 +489,39 @@ Done ahead of M3: incoming handling, including delivery receipts, stays on Dart 
 - **Descoped:** SMS forwarding (`isRpSms` chats, `SMSMsg`, SMS relay) is **not** being ported natively and stays in Flutter. Compose hands sends in those chats to the existing Dart path (`MessageSender` → `execute-rust-send`), so `execute-rust-send` and that use of `DartWorker` remain for as long as the Flutter side owns SMS forwarding.
 - **Acceptance:** Messages show "Sending..." at once and become sent on confirm. Messages queued offline or while the app is killed are delivered once connectivity returns, in order.
 
+### Conversation UX in Compose (done ahead of M5–M8)
+- [x] Tapbacks: long-press → 6 standard reactions, or any emoji via `EmojiPickerView`. Choosing yours again removes it. Sent through the outgoing queue as `React` with retries; the UI shows one net reaction per sender.
+- [x] Reply (thread quote in the bubble and in the input bar), Copy.
+- [x] **Stacked media:** all picked attachments plus the caption are sent as **one** iMessage (attachment parts, then text), which iPhones render as a stack/grid. Flutter sent one message per attachment. Attachment guids `<id>_<i>` and the `attributedBody` match what Dart's `reflectMessageDyn` writes. Incoming multi-attachment messages (native and older Flutter rows) render as a grid with "+N".
+- [x] Voice notes: tap mic to record, tap again to send (AAC `.m4a`, `voice = true`, same as Flutter). Inline audio player. Incoming CAF voice notes are converted to m4a after download with ffmpeg-kit, like Dart. This deviates from §8.3's remux plan, which is still preferred long-term.
+- [x] Files of any type (document picker), tap-to-download for attachments not auto-downloaded, videos/files open in the system app.
+- [x] Group chats: sender name above each run; runs break per sender. Group events render as centered system lines.
+- [x] Link previews: outgoing previews are built from Open Graph metadata (`LinkPreviews.kt`, Rust `new_link_meta`). Incoming/outgoing preview cards render.
+- [x] Name & Photo sharing on outgoing messages and reactions (`ProfileSharing.kt`, Rust `decode_profile_message`), with Dart's rules. Incoming embedded profiles are still processed by Dart.
+- [x] Notifications show incoming images inline: the first image is downloaded before posting (≤20 s), and SystemUI is granted read access to the URI.
+- **Descoped for now:** send effects. Also not done yet: typing indicators, edit/unsend from Compose.
+
 ### Milestone 5: Flutter Interop
-- [ ] `native_service` MethodChannel + `native_events` EventChannel.
-- [ ] Dart rustpush send/receive paths switched over; Dart queues disabled.
-- **Acceptance:** Flutter and Compose can be used interchangeably on the same store with no duplicate or missed messages.
+**Status: not done; deprioritised.** Compose is the primary UI, so a full native bridge for Flutter isn't planned for now. Today:
+- Both UIs share one native store (M2/M3), so Flutter sees everything Kotlin writes, live.
+- Flutter's own sends still go through Dart and FRB `send`. Incoming messages Kotlin handles never reach Dart's queues.
+- [ ] Remaining if Flutter keeps a role: route Flutter's sends through `OutgoingMessageQueue` (a `native_service` MethodChannel), or make Flutter read-only.
 
 ### Milestone 6: Remaining Headless Paths
-- [ ] Notification mark-read ported; FCM/UnifiedPush/Socket.IO removed. Notification reply is done (M4). SMS relay (`SMSMsg`) is descoped and stays on Dart.
-- [ ] `DartWorker.kt` / `DartWorkManager.kt` deleted.
+- [x] Notification reply (M4) and mark-as-read are native.
+- [x] **Removed, not ported:** BlueBubbles server mode. That covers FCM (`BlueBubblesFirebaseMessagingService` + handlers), UnifiedPush (receiver + handler), the Socket.IO foreground service with its boot/restart receivers, and the Tasker "get server URL" receiver. The app-level Firebase/UnifiedPush dependencies are gone too. Their Flutter method names answer as no-ops (`MethodCallHandler.RETIRED_METHODS`).
+- [x] **Removed, not ported:** SMS relay (`SMSObserver` → `SMSMsg`, `MessageSender` / `execute-rust-send`). Sends in old SMS-forwarding chats fail visibly with "SMS forwarding is no longer supported". `SMSReceiver` / `PDUReceiver` stay; they handle phone-number registration (REG-RESP), not relay.
+- [ ] `DartWorker.kt` / `DartWorkManager.kt` can't be deleted yet. They still serve:
+  1. `APNService.forwardToDart` for incoming push types that aren't ported (FaceTime, registration state, Find My, profile updates, app balloons, icon changes, recycle bin, …), when Flutter isn't running;
+  2. two fallbacks in `InternalIntentReceiver` when the native store failed to open.
+
+  Each ported push type shrinks (1).
 
 ### Milestone 7: Media
-- [ ] Coil HEIC + video thumbnails.
-- [ ] CAF demuxer + Ogg/Opus remux (incoming); CAF/Opus generation (outgoing).
+- [x] HEIC and video thumbnails: rendered by the existing `LocalImage` loader (`BitmapFactory` decodes HEIF on API 28+; `MediaMetadataRetriever` for video frames). Coil isn't needed for local media.
+- [x] Incoming CAF voice notes play: converted to m4a after download with ffmpeg-kit, as Dart did. The §8.3 demux/remux idea (no re-encode) is still possible as an optimisation.
+- [x] Outgoing voice notes: AAC `.m4a` with `voice = true`, the same format Flutter sent and that Apple clients accept. Generating CAF/Opus isn't required.
+- [x] Inline audio player with scrubbing; tap-to-download; videos/files open in the system app.
 
 ### Milestone 8: Flutter & FRB Removal
 - [ ] Compose feature parity, covering at least setup/login, settings, FaceTime, Find My, passwords and shared albums.

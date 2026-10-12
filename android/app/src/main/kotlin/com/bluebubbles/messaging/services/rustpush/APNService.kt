@@ -29,7 +29,6 @@ import com.bluebubbles.messaging.services.backend_ui_interop.MethodCallHandler
 import com.bluebubbles.messaging.services.messaging.IncomingPipeline
 import com.bluebubbles.messaging.services.system.GetZenMode
 import com.bluebubbles.messaging.services.system.ZenModeUUIDHandler
-import com.bluebubbles.telephony_plus.receive.SMSObserver
 import com.google.gson.GsonBuilder
 import com.google.gson.ToNumberPolicy
 import kotlinx.coroutines.CoroutineScope
@@ -171,16 +170,7 @@ class APNService : Service(), MsgReceiver {
 
     fun launchAgent() {
         Log.i("launching agent", "herer")
-        SMSObserver.init(applicationContext) { context, map ->
-            if (MainActivity.engine != null && MainActivity.engine_ready) {
-                // app is alive, deliver directly there
-                MethodCallHandler.invokeMethod("SMSMsg", map)
-                return@init
-            }
-            CoroutineScope(Dispatchers.Main).launch {
-                DartWorker.callMethod(this@APNService, "SMSMsg", map)
-            }
-        }
+        // SMS relay (forwarding SMS to other devices via SMSObserver/"SMSMsg") was removed.
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val filter = IntentFilter(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)

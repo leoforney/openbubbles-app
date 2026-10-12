@@ -21,6 +21,7 @@ fun MessageList(
     isLoading: Boolean,
     onLoadMore: () -> Unit,
     onAttachmentClick: (Attachment) -> Unit,
+    onLongPress: (Message) -> Unit = {},
     listState: LazyListState = rememberLazyListState()
 ) {
     // Infinite scroll detection
@@ -66,8 +67,11 @@ fun MessageList(
             val previousMessage = messages.getOrNull(index + 1)
             val nextMessage = messages.getOrNull(index - 1)
 
-            val isFirstInGroup = previousMessage == null || previousMessage.isIncoming != message.isIncoming
-            val isLastInGroup = nextMessage == null || nextMessage.isIncoming != message.isIncoming
+            // A run breaks on side change, sender change (group chats) and system lines.
+            fun sameRun(a: Message?, b: Message) = a != null && !a.isGroupEvent && !b.isGroupEvent &&
+                a.isIncoming == b.isIncoming && (!b.isIncoming || a.senderName == b.senderName)
+            val isFirstInGroup = !sameRun(previousMessage, message)
+            val isLastInGroup = !sameRun(nextMessage, message)
 
             val spacing = if (isLastInGroup) 8.dp else 2.dp
 
@@ -78,7 +82,8 @@ fun MessageList(
                     isLastByMe = isLastByMe,
                     isFirstInGroup = isFirstInGroup,
                     isLastInGroup = isLastInGroup,
-                    onAttachmentClick = onAttachmentClick
+                    onAttachmentClick = onAttachmentClick,
+                    onLongPress = onLongPress
                 )
             }
         }

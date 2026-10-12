@@ -537,3 +537,61 @@ pub fn attachment_from_plist(data: String) -> Result<NativeAttachment, NativeMsg
         .map_err(|e| NativeMsgError::Invalid { msg: format!("attachment plist: {e}") })?;
     Ok(att.into())
 }
+
+#[derive(uniffi::Record)]
+pub struct NativeLinkImage {
+    pub mime_type: String,
+    pub data: Vec<u8>,
+    /// Remote URL the image was fetched from.
+    pub url: String,
+}
+
+/// Builds an outgoing rich link preview, mirroring Dart's sendMessage (rustpush_service.dart).
+#[uniffi::export]
+pub fn new_link_meta(original_url: String, url: String, title: Option<String>, summary: Option<String>,
+                     icon: Option<NativeLinkImage>, image: Option<NativeLinkImage>) -> Arc<crate::native_types::NativeLinkMeta> {
+    use rustpush::{LPLinkMetadata, LPImageMetadata, LPIconMetadata, LinkMeta, NSURL, NSArray, NSArrayClass, RichLinkImageAttachmentSubstitute};
+    let nsurl = |s: String| NSURL { base: "$null".to_string(), relative: s };
+    let mut attachments: Vec<Vec<u8>> = vec![];
+    let (mut icon_meta, mut icon_sub) = (None, None);
+    if let Some(i) = icon {
+        icon_meta = Some(LPIconMetadata { url: nsurl(i.url), version: 1 });
+        icon_sub = Some(RichLinkImageAttachmentSubstitute { mime_type: i.mime_type, rich_link_image_attachment_substitute_index: attachments.len() as u64 });
+        attachments.push(i.data);
+    }
+    let (mut image_meta, mut image_sub) = (None, None);
+    if let Some(i) = image {
+        image_meta = Some(LPImageMetadata { size: "{0, 0}".to_string(), url: nsurl(i.url), version: 1 });
+        image_sub = Some(RichLinkImageAttachmentSubstitute { mime_type: i.mime_type, rich_link_image_attachment_substitute_index: attachments.len() as u64 });
+        attachments.push(i.data);
+    }
+    Arc::new(crate::native_types::NativeLinkMeta(LinkMeta {
+        attachments,
+        data: LPLinkMetadata {
+            images: image_meta.clone().map(|m| NSArray { objects: vec![m], class: NSArrayClass::NSArray }),
+            icons: icon_meta.clone().map(|m| NSArray { objects: vec![m], class: NSArrayClass::NSArray }),
+            image_metadata: image_meta,
+            image: image_sub,
+            icon_metadata: icon_meta,
+            icon: icon_sub,
+            original_url: Some(nsurl(original_url)),
+            url: Some(nsurl(url)),
+            title,
+            summary,
+            version: 1,
+            is_incomplete: None,
+            uses_activity_pub: None,
+            is_encoded_for_local_use: None,
+            collaboration_type: None,
+            specialization2: None,
+        },
+    }))
+}
+
+/// Decodes the profile Dart stores in settings (`shareProfileMessage`), same as FRB's decode_profile_message.
+#[uniffi::export]
+pub fn decode_profile_message(s: String) -> Result<Arc<crate::native_types::NativeShareProfile>, NativeMsgError> {
+    let p: rustpush::ShareProfileMessage = plist::from_bytes(s.as_bytes())
+        .map_err(|e| NativeMsgError::Invalid { msg: format!("profile: {e}") })?;
+    Ok(Arc::new(crate::native_types::NativeShareProfile(p)))
+}

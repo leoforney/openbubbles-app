@@ -1,12 +1,10 @@
 package com.bluebubbles.messaging.services.system
 
-import android.R.attr.mode
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Parcel
 import com.bluebubbles.messaging.models.MethodCallHandlerImpl
-import com.google.android.datatransport.runtime.scheduling.persistence.EventStoreModule_PackageNameFactory.packageName
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import rikka.shizuku.Shizuku

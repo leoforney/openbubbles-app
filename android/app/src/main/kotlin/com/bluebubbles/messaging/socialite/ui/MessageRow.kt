@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +33,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MessageRow(
     message: Message,
@@ -39,8 +41,19 @@ fun MessageRow(
     isLastByMe: Boolean,
     isFirstInGroup: Boolean,
     isLastInGroup: Boolean,
-    onAttachmentClick: (Attachment) -> Unit
+    onAttachmentClick: (Attachment) -> Unit,
+    onLongPress: (Message) -> Unit = {}
 ) {
+    if (message.isGroupEvent) {
+        Text(
+            text = message.text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+        )
+        return
+    }
     // Use Animatable for physics-based spring return instead of a raw float
     val offsetX = remember { Animatable(0f) }
     val maxSwipe = with(LocalDensity.current) { -80.dp.toPx() } // -80dp to the left
@@ -97,6 +110,14 @@ fun MessageRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = if (message.isIncoming) Alignment.Start else Alignment.End
             ) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier.combinedClickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                        onLongClick = { onLongPress(message) }
+                    )
+                ) {
                 MessageBubble(
                     message = message,
                     isGroup = isGroup,
@@ -104,6 +125,7 @@ fun MessageRow(
                     isLastInGroup = isLastInGroup,
                     onAttachmentClick = onAttachmentClick
                 )
+                }
 
                 // Read / Delivered Receipts for outgoing messages
                 if (!message.isIncoming && isLastByMe) {

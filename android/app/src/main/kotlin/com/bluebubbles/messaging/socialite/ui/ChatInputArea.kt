@@ -33,6 +33,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -148,7 +151,13 @@ fun ChatInputBar(
     onRemoveMedia: (Uri) -> Unit,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
-    onSendClick: () -> Unit
+    onSendClick: () -> Unit,
+    replyTo: com.bluebubbles.messaging.socialite.model.ReplyPreview? = null,
+    onCancelReply: () -> Unit = {},
+    isRecording: Boolean = false,
+    onMicClick: () -> Unit = {},
+    onCancelRecording: () -> Unit = {},
+    onFileClick: () -> Unit = {},
 ) {
     var isAttachmentPanelExpanded by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -174,6 +183,52 @@ fun ChatInputBar(
                 .padding(horizontal = 8.dp, vertical = 8.dp)
                 .navigationBarsPadding() // Keep it above system navigation
         ) {
+            // Reply banner
+            if (replyTo != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(start = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
+                        Text(
+                            "Replying to ${replyTo.senderName ?: "message"}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(replyTo.text, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    IconButton(onClick = onCancelReply) { Icon(Icons.Default.Close, contentDescription = "Cancel reply") }
+                }
+            }
+
+            // Recording banner
+            if (isRecording) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(start = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Recording… tap the mic again to send",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onCancelRecording) {
+                        Icon(Icons.Default.Close, contentDescription = "Discard recording", tint = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
+            }
+
             // Attachment Tray (Sits above text input, like Google Messages)
             if (selectedMediaUris.isNotEmpty()) {
                 LazyRow(
@@ -285,27 +340,39 @@ fun ChatInputBar(
                     )
                 )
 
-                // Send Button
+                // Send button, or mic when there is nothing to send (voice notes)
                 val canSend = text.isNotBlank() || selectedMediaUris.isNotEmpty()
                 IconButton(
                     onClick = {
                         if (isAttachmentPanelExpanded) {
                             isAttachmentPanelExpanded = false
                         }
-                        onSendClick()
+                        if (canSend && !isRecording) onSendClick() else onMicClick()
                     },
-                    enabled = canSend,
+                    enabled = true,
                     modifier = Modifier
                         .padding(start = 4.dp, bottom = 4.dp)
                         .background(
-                            if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            when {
+                                isRecording -> MaterialTheme.colorScheme.error
+                                canSend -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                            },
                             CircleShape
                         )
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Send,
-                        contentDescription = "Send",
-                        tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        imageVector = when {
+                            isRecording -> Icons.Filled.Stop
+                            canSend -> Icons.Filled.Send
+                            else -> Icons.Filled.Mic
+                        },
+                        contentDescription = when {
+                            isRecording -> "Stop and send"
+                            canSend -> "Send"
+                            else -> "Record voice message"
+                        },
+                        tint = if (canSend || isRecording) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -384,8 +451,18 @@ fun ChatInputBar(
                                 modifier = Modifier.weight(1f)
                             )
 
-                            // 3rd slot spacer (row fits 4 items)
-                            Spacer(modifier = Modifier.weight(1f))
+                            // 3rd item: any file
+                            AttachmentOptionItem(
+                                label = "Files",
+                                icon = Icons.Filled.AttachFile,
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary,
+                                onClick = {
+                                    isAttachmentPanelExpanded = false
+                                    onFileClick()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
 
                             // 4th slot spacer (row fits 4 items)
                             Spacer(modifier = Modifier.weight(1f))

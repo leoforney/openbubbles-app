@@ -11,4 +11,12 @@ internal object FlutterPrefs {
 
     fun string(context: Context, key: String, default: String?): String? =
         runCatching { prefs(context).getString("flutter.$key", default) }.getOrDefault(default)
+
+    /**
+     * Writes a setting Flutter also reads. Note: a running Flutter UI keeps settings in memory and
+     * may write its cached value back later; only use for values where that is harmless.
+     */
+    fun putString(context: Context, key: String, value: String) {
+        prefs(context).edit().putString("flutter.$key", value).apply()
+    }
 }

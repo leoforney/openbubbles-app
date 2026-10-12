@@ -21,6 +21,7 @@ import uniffi.rust_lib_bluebubbles.NativePushState
 import uniffi.rust_lib_bluebubbles.NativeReactMessageType
 import uniffi.rust_lib_bluebubbles.newMessageInst
 import java.util.Date
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
@@ -34,6 +35,8 @@ import java.util.UUID
 internal class IncomingMessageHandler(private val context: Context, private val state: NativePushState) {
     companion object {
         private const val TAG = "IncomingMessages"
+        private const val IMAGE_WAIT_MS = 20_000L
+        private val notifyScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
 
         /**
          * Whether this message is handled natively. Everything else is forwarded to Dart unchanged,
@@ -160,8 +163,7 @@ internal class IncomingMessageHandler(private val context: Context, private val 
             }
         }
         if (saved != null && saved.isNew) {
-            AttachmentDownloader.downloadIfEnabled(context, state, saved.message.id)
-            IncomingNotifier.onNewMessage(context, saved.chat, saved.message, notifyAnyways = false)
+            notifyWithImage(saved)
             if (saved.message.isFromMe != true && ActiveChatTracker.isActive(saved.chat.id)) {
                 ReadReceipts.onMessageWhileActive(context, saved.chat)
             }
@@ -169,6 +171,27 @@ internal class IncomingMessageHandler(private val context: Context, private val 
     }
 
     class Saved(val chat: ChatEntity, val message: MessageEntity, val isNew: Boolean)
+
+    /**
+     * Posts the notification for a new message. If it has an image and auto-download is allowed,
+     * the image is downloaded first (max [IMAGE_WAIT_MS]) so the notification can show it inline.
+     * Runs outside the pipeline so a slow download never delays other messages.
+     */
+    private fun notifyWithImage(saved: Saved) {
+        val image = if (saved.message.isFromMe == true || !AttachmentDownloader.autoDownloadAllowed(context)) null else
+            attachmentBox.query { apply(com.bluebubbles.messaging.objectbox.AttachmentEntity_.messageIdId.equal(saved.message.id)) }
+                .find().firstOrNull { it.mimeType?.startsWith("image/") == true }
+        if (image == null) {
+            AttachmentDownloader.downloadIfEnabled(context, state, saved.message.id)
+            IncomingNotifier.onNewMessage(context, saved.chat, saved.message, notifyAnyways = false)
+            return
+        }
+        notifyScope.launch {
+            kotlinx.coroutines.withTimeoutOrNull(IMAGE_WAIT_MS) { AttachmentDownloader.downloadNow(context, state, image) }
+            IncomingNotifier.onNewMessage(context, saved.chat, saved.message, notifyAnyways = false)
+            AttachmentDownloader.downloadIfEnabled(context, state, saved.message.id, skipId = image.id)
+        }
+    }
 
     /** Port of `chatForMessageInner` + `chatForMessage` (conformance updates). */
     private fun chatForMessage(inst: NativeMessageInst): ChatEntity {
