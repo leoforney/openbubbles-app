@@ -50,4 +50,8 @@ data class Message(
     val isEdited: Boolean = false,
     /** Renames, participant changes etc.; rendered as a centered system line. */
     val isGroupEvent: Boolean = false,
+    /** Every part was unsent; rendered as "X unsent a message". */
+    val isUnsent: Boolean = false,
+    /** Edits already made to the text part (Apple allows 5). */
+    val editCount: Int = 0,
 )

@@ -14,7 +14,7 @@ import androidx.core.app.RemoteInput
 import androidx.core.graphics.drawable.IconCompat
 import com.bluebubbles.messaging.BubbleActivity
 import com.bluebubbles.messaging.Constants
-import com.bluebubbles.messaging.MainActivity
+import com.bluebubbles.messaging.ComposeHomeActivity
 import com.bluebubbles.messaging.R
 import com.bluebubbles.messaging.models.MethodCallHandlerImpl
 import com.bluebubbles.messaging.services.intents.InternalIntentReceiver
@@ -55,6 +55,8 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
         // attachment details
         val attachmentPath: String? = call.argument("attachment_path")
         val attachmentType: String? = call.argument("attachment_type")
+        // Re-post an already shown message, e.g. to add its image once downloaded.
+        val updateExisting: Boolean = call.argument("update_existing") ?: false
 
         val name = if (notifyAnyways) {
             "Notify Anyways: $chatTitle"
@@ -72,7 +74,8 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
             notificationManager.cancel(Constants.newMessageNotificationTag, notificationId)
         }
 
-        PushShareTargetsHandler().pushShareTarget(context, chatTitle, chatGuid, chatIcon)
+        // Conversation shortcut first: the notification below links to it (setShortcutId + setLocusId).
+        PushShareTargetsHandler().pushShareTarget(context, chatTitle, chatGuid, chatIcon, personUri = if (chatIsGroup) null else chat_uri)
 
         val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val channelId = if (notifyAnyways) {
@@ -99,8 +102,10 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
         val notificationPostedAlready = notificationManager.activeNotifications.firstOrNull { it.notification.extras.getString("chatGuid") == chatGuid && it.notification.extras.getString("messageGuid") == messageGuid } != null
         // this is used to copy the style, since the notification already exists
         val chatNotification = notificationManager.activeNotifications.lastOrNull { it.notification.extras.getString("chatGuid") == chatGuid && it.notification.extras.getString("channelId") == channelId }
-        // don't double post a notification
-        if (notificationPostedAlready) return result.success(null)
+        // don't double post a notification (unless asked to update it in place)
+        if (notificationPostedAlready && !updateExisting) return result.success(null)
+        // updating a notification that is gone (dismissed/read) would resurrect it
+        if (updateExisting && chatNotification == null) return result.success(null)
 
         // build the sender object and push the share target again
         val sender = Person.Builder()
@@ -117,7 +122,17 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
             .build()
 
         // get or create a messaging style
-        val style = if (chatNotification != null) NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(chatNotification.notification)!! else NotificationCompat.MessagingStyle(Person.Builder().setName("You").build())
+        val existingStyle = if (chatNotification != null) NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(chatNotification.notification)!! else NotificationCompat.MessagingStyle(Person.Builder().setName("You").build())
+        // When updating, drop the old copy of this message; the version with the image is added below.
+        val style = if (updateExisting) {
+            NotificationCompat.MessagingStyle(existingStyle.user).also { rebuilt ->
+                rebuilt.conversationTitle = existingStyle.conversationTitle
+                rebuilt.isGroupConversation = existingStyle.isGroupConversation
+                existingStyle.messages
+                    .filterNot { it.timestamp == messageDate && it.text?.toString() == messageText }
+                    .forEach { rebuilt.addMessage(it) }
+            }
+        } else existingStyle
         if (chatIsGroup) {
             style.isGroupConversation = true
             style.conversationTitle = chatTitle
@@ -151,12 +166,13 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
         val openConversationIntent = PendingIntent.getActivity(
             context,
             notificationId + Constants.pendingIntentOpenChatOffset,
-            Intent(context, MainActivity::class.java)
+            // Opens the chat in the Compose UI (extras carry "chatGuid").
+            Intent(context, ComposeHomeActivity::class.java)
                 .putExtras(extras)
                 .putExtra("notificationId", notificationId)
-                .putExtra("bubble", false)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .setType("OpenChat"),
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         // intent to swipe away the notification
@@ -223,7 +239,7 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
             .setSmallIcon(R.mipmap.ic_stat_icon)
             .setGroup(Constants.notificationGroupKey)
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
-            .setOnlyAlertOnce(messageIsFromMe)
+            .setOnlyAlertOnce(messageIsFromMe || updateExisting)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -237,7 +253,7 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
                 if (notifyAnyways) {
                     it // do not set shortcut, so it notifys anyways
                 } else {
-                    it.setShortcutId(chatGuid)
+                    it.setShortcutId(chatGuid).setLocusId(androidx.core.content.LocusIdCompat(chatGuid))
                 }
             }
             .addAction(markAsReadAction)
@@ -250,10 +266,8 @@ class CreateIncomingMessageNotification: MethodCallHandlerImpl() {
         val openSummaryIntent = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, MainActivity::class.java)
-                .putExtra("chatGuid", "-1")
-                .putExtra("notificationId", 0)
-                .putExtra("bubble", false)
+            Intent(context, ComposeHomeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .setType("OpenSummary"),
             PendingIntent.FLAG_IMMUTABLE
         )

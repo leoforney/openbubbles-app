@@ -72,7 +72,8 @@ class InternalIntentReceiver: BroadcastReceiver() {
                 val notificationId: Int = intent.getIntExtra("notificationId", 0)
                 val chatGuid: String? = intent.getStringExtra("chatGuid")
                 val messageGuid: String? = intent.getStringExtra("messageGuid")
-                val replyText = RemoteInput.getResultsFromIntent(intent)?.getString("text_reply") ?: return
+                // getCharSequence, not getString: voice replies (Android Auto, Assistant) are often not a String
+                val replyText = RemoteInput.getResultsFromIntent(intent)?.getCharSequence("text_reply")?.toString()?.takeIf { it.isNotBlank() } ?: return
                 if (chatGuid == null || isDuplicateReply(chatGuid, replyText)) return
 
                 val chatId = if (ObjectBox.isOpen) OutgoingMessageQueue.findChatIdByGuid(chatGuid) else null
@@ -87,6 +88,9 @@ class InternalIntentReceiver: BroadcastReceiver() {
                 val pending = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
+                        // Replying means you read it: mark read first (receipt follows the chat's
+                        // read-receipt setting), so the receipt points at their message, not the reply.
+                        ReadReceipts.markChatReadNow(context, chatId, clearNotification = false)
                         OutgoingMessageQueue.enqueue(context, chatId, replyText, emptyList())
                         appendReplyToNotification(context, notificationId, replyText)
                     } catch (e: Exception) {

@@ -2,9 +2,11 @@ package com.bluebubbles.messaging.socialite.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,13 +39,15 @@ import com.bluebubbles.messaging.socialite.model.Message
 import com.bluebubbles.messaging.socialite.model.ReplyPreview
 import com.bluebubbles.messaging.utils.getReactionEmoji
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
     isGroup: Boolean,
     isFirstInGroup: Boolean,
     isLastInGroup: Boolean,
-    onAttachmentClick: (Attachment) -> Unit
+    onAttachmentClick: (Attachment) -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val isIncoming = message.isIncoming
 
@@ -52,11 +57,25 @@ fun MessageBubble(
     val topEndRadius = if (!isIncoming && !isFirstInGroup) 4.dp else 24.dp
     val bottomEndRadius = if (!isIncoming && !isLastInGroup) 4.dp else 24.dp
     val onBubble = if (isIncoming) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer
-    // A message that is just a link renders as the preview card itself (like iMessage/Google
-    // Messages): no bubble padding and no raw URL.
-    val linkOnly = message.linkPreview != null && message.attachments.isEmpty() && isOnlyUrl(message.text)
-    val mediaOnly = (message.attachments.isNotEmpty() && message.text.isEmpty() || linkOnly) && message.replyTo == null
-    val bodyText = if (linkOnly) "" else message.text
+    val visualAttachments = remember(message.attachments) {
+        message.attachments.filter {
+            val m = it.mimeType ?: ""
+            m.startsWith("image/") || m.startsWith("video/")
+        }
+    }
+    val otherAttachments = remember(message.attachments, visualAttachments) {
+        message.attachments.filter { it !in visualAttachments }
+    }
+
+    // Strip object replacement characters and whitespace so image/video messages don't render empty bubbles
+    val cleanText = remember(message.text) {
+        message.text
+            .replace("\uFFFC", "")
+            .replace("\uFFFD", "")
+            .trim()
+    }
+    val linkOnly = message.linkPreview != null && message.attachments.isEmpty() && isOnlyUrl(cleanText)
+    val bodyText = if (linkOnly) "" else cleanText
 
     Column(horizontalAlignment = if (isIncoming) Alignment.Start else Alignment.End) {
         // Sender name on the first message of an incoming run in group chats
@@ -70,26 +89,58 @@ fun MessageBubble(
         }
 
         Box {
-            Box(
-                modifier = Modifier
-                    .padding(top = if (message.reactions.isNotEmpty()) 16.dp else 0.dp)
-                    .clip(RoundedCornerShape(topStart = topStartRadius, topEnd = topEndRadius, bottomStart = bottomStartRadius, bottomEnd = bottomEndRadius))
-                    .background(if (isIncoming) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
-                    .padding(if (mediaOnly) 0.dp else 12.dp)
-                    .widthIn(max = 280.dp)
+            Column(
+                modifier = Modifier.padding(top = if (message.reactions.isNotEmpty()) 16.dp else 0.dp),
+                horizontalAlignment = if (isIncoming) Alignment.Start else Alignment.End
             ) {
-                Column {
-                    message.replyTo?.let { ReplyQuote(it, onBubble) }
-                    if (message.attachments.isNotEmpty()) {
-                        AttachmentGroup(message.attachments, isIncoming, onAttachmentClick)
-                        if (bodyText.isNotEmpty()) Spacer(modifier = Modifier.height(6.dp))
+                message.replyTo?.let { ReplyQuote(it, onBubble) }
+
+                // Visual attachments (photo stack or single photo) without bubble wrapper
+                if (visualAttachments.isNotEmpty()) {
+                    PhotoCardStack(
+                        attachments = visualAttachments,
+                        isIncoming = isIncoming,
+                        onClick = onAttachmentClick,
+                        onLongClick = onLongClick
+                    )
+                }
+
+                // Text bubble and other attachments
+                if (bodyText.isNotEmpty() || otherAttachments.isNotEmpty() || message.linkPreview != null) {
+                    if (visualAttachments.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
-                    if (bodyText.isNotEmpty()) {
-                        Text(text = bodyText, style = MaterialTheme.typography.bodyLarge, color = onBubble)
-                    }
-                    message.linkPreview?.let {
-                        if (!mediaOnly) Spacer(Modifier.height(8.dp))
-                        LinkPreviewCard(it, onBubble, asBubble = mediaOnly)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(topStart = topStartRadius, topEnd = topEndRadius, bottomStart = bottomStartRadius, bottomEnd = bottomEndRadius))
+                            .background(if (isIncoming) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primaryContainer)
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {},
+                                onLongClick = onLongClick
+                            )
+                            .padding(if (linkOnly) 0.dp else 12.dp)
+                            .widthIn(max = 280.dp)
+                    ) {
+                        Column {
+                            for (att in otherAttachments) {
+                                AttachmentView(
+                                    att,
+                                    onClick = { onAttachmentClick(att) },
+                                    onLongClick = onLongClick,
+                                    isIncoming = isIncoming
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                            if (bodyText.isNotEmpty()) {
+                                Text(text = bodyText, style = MaterialTheme.typography.bodyLarge, color = onBubble)
+                            }
+                            message.linkPreview?.let {
+                                if (bodyText.isNotEmpty()) Spacer(Modifier.height(8.dp))
+                                LinkPreviewCard(it, onBubble, asBubble = linkOnly, onLongClick = onLongClick)
+                            }
+                        }
                     }
                 }
             }
@@ -141,17 +192,26 @@ private fun isOnlyUrl(text: String) = text.isEmpty() || URL_ONLY.matches(text)
  * Rich link card. With [asBubble] it *is* the bubble (the parent clips it to the bubble shape and
  * adds no padding); otherwise it sits inside a text bubble below the text.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun LinkPreviewCard(link: LinkPreview, color: androidx.compose.ui.graphics.Color, asBubble: Boolean) {
+private fun LinkPreviewCard(
+    link: LinkPreview,
+    color: androidx.compose.ui.graphics.Color,
+    asBubble: Boolean,
+    onLongClick: () -> Unit = {}
+) {
     val context = LocalContext.current
     Column(
         Modifier
             .widthIn(min = 240.dp)
             .fillMaxWidth()
             .then(if (asBubble) Modifier else Modifier.clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.08f)))
-            .clickable {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            }
+            .combinedClickable(
+                onClick = {
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                },
+                onLongClick = onLongClick
+            )
     ) {
         link.imageUrl?.let {
             // Fixed height: AsyncImage measures 0 tall before the image loads otherwise.

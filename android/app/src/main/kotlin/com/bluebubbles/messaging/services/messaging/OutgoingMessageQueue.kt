@@ -155,8 +155,13 @@ object OutgoingMessageQueue {
             return@withContext listOf(id)
         }
         if (voice) voiceMessages.add(id)
-        ObjectBox.update<ChatEntity>(chat.id) { it.dbOnlyLatestMessageDate = Date(now) }
+        // Like Dart's Chat.addMessage for a message from me: the chat is no longer unread.
+        ObjectBox.update<ChatEntity>(chat.id) {
+            it.dbOnlyLatestMessageDate = Date(now)
+            it.hasUnreadMessage = false
+        }
         SendMessageWorker.enqueue(context, chat.id, id)
+        ShareTargets.reportUsed(context, chat.id)
         listOf(id)
     }
 

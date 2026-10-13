@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -55,7 +57,14 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatListScreen(onChatSelected: (Chat) -> Unit) {
+fun ChatListScreen(
+    onChatSelected: (Chat) -> Unit,
+    onNewChat: () -> Unit,
+    onOpenLegacy: () -> Unit = {},
+    /** Something was shared into the app: pick the conversation to send it to. */
+    shareMode: Boolean = false,
+    onCancelShare: () -> Unit = {}
+) {
     var chats by remember { mutableStateOf<List<Chat>>(emptyList()) }
     var selectedProfile by remember { mutableStateOf<Chat?>(null) }
 
@@ -67,8 +76,51 @@ fun ChatListScreen(onChatSelected: (Chat) -> Unit) {
 
     Scaffold(
         topBar = {
+            var menuOpen by remember { mutableStateOf(false) }
+            if (shareMode) {
+                TopAppBar(
+                    title = { Text("Share to…") },
+                    navigationIcon = {
+                        androidx.compose.material3.IconButton(onClick = onCancelShare) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = "Cancel sharing")
+                        }
+                    }
+                )
+                return@Scaffold
+            }
             TopAppBar(
-                title = { Text("Messages") }
+                title = { Text("Messages") },
+                actions = {
+                    androidx.compose.foundation.layout.Box {
+                        androidx.compose.material3.IconButton(onClick = { menuOpen = true }) {
+                            Icon(androidx.compose.material.icons.Icons.Default.MoreVert, contentDescription = "More options")
+                        }
+                        androidx.compose.material3.DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Legacy") },
+                                onClick = {
+                                    menuOpen = false
+                                    onOpenLegacy()
+                                }
+                            )
+                        }
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            androidx.compose.material3.ExtendedFloatingActionButton(
+                onClick = onNewChat,
+                icon = {
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(id = com.bluebubbles.messaging.R.drawable.ic_start_chat),
+                        contentDescription = "Start chat",
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                text = { Text("Start chat") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         }
     ) { padding ->
@@ -313,3 +365,4 @@ fun ChatListItem(chat: Chat, onClick: () -> Unit, onProfileClick: () -> Unit) {
         }
     }
 }
+

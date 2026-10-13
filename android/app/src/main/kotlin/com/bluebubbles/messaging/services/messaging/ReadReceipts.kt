@@ -35,22 +35,25 @@ object ReadReceipts {
      */
     fun markChatRead(context: Context, chatId: Long, clearNotification: Boolean = true) {
         val appContext = context.applicationContext
-        scope.launch {
-            try {
-                if (!ObjectBox.isOpen) return@launch
-                val chat = ObjectBox.store.callInTx {
-                    val box = ObjectBox.store.boxFor<ChatEntity>()
-                    val chat = box.get(chatId) ?: return@callInTx null
-                    if (chat.hasUnreadMessage != true) return@callInTx null
-                    chat.hasUnreadMessage = false
-                    box.put(chat)
-                    chat
-                }
-                if (clearNotification) ObjectBox.store.boxFor<ChatEntity>().get(chatId)?.let { IncomingNotifier.clearChatNotification(appContext, it) }
-                if (chat != null) sendRead(appContext, chat)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to mark chat $chatId read", e)
+        scope.launch { markChatReadNow(appContext, chatId, clearNotification) }
+    }
+
+    /** Same as [markChatRead], but returns once the chat is marked and the receipt was sent. */
+    suspend fun markChatReadNow(context: Context, chatId: Long, clearNotification: Boolean = true) {
+        try {
+            if (!ObjectBox.isOpen) return
+            val chat = ObjectBox.store.callInTx {
+                val box = ObjectBox.store.boxFor<ChatEntity>()
+                val chat = box.get(chatId) ?: return@callInTx null
+                if (chat.hasUnreadMessage != true) return@callInTx null
+                chat.hasUnreadMessage = false
+                box.put(chat)
+                chat
             }
+            if (clearNotification) ObjectBox.store.boxFor<ChatEntity>().get(chatId)?.let { IncomingNotifier.clearChatNotification(context, it) }
+            if (chat != null) sendRead(context, chat)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark chat $chatId read", e)
         }
     }
 

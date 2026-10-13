@@ -154,6 +154,9 @@ fun ChatInputBar(
     onSendClick: () -> Unit,
     replyTo: com.bluebubbles.messaging.socialite.model.ReplyPreview? = null,
     onCancelReply: () -> Unit = {},
+    /** Original text of the message being edited; non-null puts the bar in edit mode. */
+    editingOriginal: String? = null,
+    onCancelEdit: () -> Unit = {},
     isRecording: Boolean = false,
     onMicClick: () -> Unit = {},
     onCancelRecording: () -> Unit = {},
@@ -183,6 +186,26 @@ fun ChatInputBar(
                 .padding(horizontal = 8.dp, vertical = 8.dp)
                 .navigationBarsPadding() // Keep it above system navigation
         ) {
+            // Edit banner
+            if (editingOriginal != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .padding(start = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
+                        Text("Editing message", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text(editingOriginal, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                    IconButton(onClick = onCancelEdit) { Icon(Icons.Default.Close, contentDescription = "Cancel edit", tint = MaterialTheme.colorScheme.onSecondaryContainer) }
+                }
+            }
+
             // Reply banner
             if (replyTo != null) {
                 Row(

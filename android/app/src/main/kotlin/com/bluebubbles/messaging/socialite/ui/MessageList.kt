@@ -22,6 +22,8 @@ fun MessageList(
     onLoadMore: () -> Unit,
     onAttachmentClick: (Attachment) -> Unit,
     onLongPress: (Message) -> Unit = {},
+    selectedGuids: Set<String>? = null,
+    onToggleSelect: (Message) -> Unit = {},
     listState: LazyListState = rememberLazyListState()
 ) {
     // Infinite scroll detection
@@ -83,7 +85,10 @@ fun MessageList(
                     isFirstInGroup = isFirstInGroup,
                     isLastInGroup = isLastInGroup,
                     onAttachmentClick = onAttachmentClick,
-                    onLongPress = onLongPress
+                    onLongPress = onLongPress,
+                    selectionMode = selectedGuids != null,
+                    selected = selectedGuids?.contains(message.guid) == true,
+                    onToggleSelect = onToggleSelect
                 )
             }
         }

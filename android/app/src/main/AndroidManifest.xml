@@ -25,7 +25,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/> <!-- FaceTime incoming calls -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" /> <!-- FaceTime incoming calls -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- Optional Functions -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" /> <!-- FaceTime -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
@@ -43,22 +43,36 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
     <!-- Features -->
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
 
     <!-- Circle Proximity Detection -->
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
 
     <!-- SMS -->
     <uses-permission android:name="android.permission.SEND_SMS" />
@@ -87,32 +101,32 @@
         <receiver
             android:name=".services.facetime.FaceTimeActionReceiver"
             android:enabled="true"
-            android:exported="true"></receiver>
+            android:exported="true" />
 
         <activity
             android:name=".services.facetime.FaceTimeActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:exported="false"
+            android:showOnLockScreen="true"
             android:supportsPictureInPicture="true"
             android:taskAffinity=".FaceTime"
-            android:theme="@style/Theme.Call"
-            android:showOnLockScreen="true"/>
-
-        <activity android:name=".services.rustpush.AuthCodeActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert"
-            android:taskAffinity=".AuthCode"/>
-
-        <activity android:name=".services.credentials.CredentialCreateActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert"
-            android:taskAffinity=".CredentialCreate"/>
-
-        <activity android:name=".services.credentials.CredentialGetActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert"
-            android:taskAffinity=".CredentialGet"/>
-
-        <activity android:name=".services.credentials.CredentialSettingsActivity"
-            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert"
-            android:taskAffinity=".CredentialSettings"/>
+            android:theme="@style/Theme.Call" />
+        <activity
+            android:name=".services.rustpush.AuthCodeActivity"
+            android:taskAffinity=".AuthCode"
+            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert" />
+        <activity
+            android:name=".services.credentials.CredentialCreateActivity"
+            android:taskAffinity=".CredentialCreate"
+            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert" />
+        <activity
+            android:name=".services.credentials.CredentialGetActivity"
+            android:taskAffinity=".CredentialGet"
+            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert" />
+        <activity
+            android:name=".services.credentials.CredentialSettingsActivity"
+            android:taskAffinity=".CredentialSettings"
+            android:theme="@style/Theme.Material3.DayNight.Dialog.Alert" />
 
         <receiver
             android:name=".PDUReceiver"
@@ -138,52 +152,58 @@
 
         <service
             android:name=".services.facetime.FaceTimeInCallService"
-            android:foregroundServiceType="camera|microphone"
-            android:exported="false" />
-        
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone" />
         <service
             android:name=".services.rustpush.APNService"
-            android:foregroundServiceType="specialUse"
-            android:exported="false" >
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps a connection alive with Apple Push Services to receive end-to-end encrypted iMessages directly from Apple." />
         </service>
         <service android:name="com.android.mms.transaction.TransactionService" />
-
-        <service android:name=".services.credentials.CredentialService"
+        <service
+            android:name=".services.credentials.CredentialService"
             android:enabled="true"
             android:exported="true"
-            android:label="iCloud Keychain"
             android:icon="@mipmap/ic_launcher"
+            android:label="iCloud Keychain"
             android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
             tools:targetApi="upside_down_cake">
             <intent-filter>
-                <action android:name="android.service.credentials.CredentialProviderService"/>
+                <action android:name="android.service.credentials.CredentialProviderService" />
             </intent-filter>
+
             <meta-data
                 android:name="android.credentials.provider"
-                android:resource="@xml/provider"/>
+                android:resource="@xml/provider" />
         </service>
-
         <service
             android:name=".services.credentials.OBAutofillService"
-            android:label="iCloud Keychain"
             android:exported="true"
+            android:label="iCloud Keychain"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE"
             tools:targetApi="27">
             <intent-filter>
                 <action android:name="android.service.autofill.AutofillService" />
             </intent-filter>
+
             <meta-data
                 android:name="android.autofill"
                 android:resource="@xml/autofill_service" />
         </service>
 
         <receiver android:name=".services.intents.InternalIntentReceiver" />
-
-        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
-        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
@@ -191,7 +211,6 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
-
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
             android:exported="false" />
@@ -223,11 +242,10 @@
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
-            android:multiprocess="false"
             android:enabled="true"
             android:exported="true"
+            android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="@string/file_provider"
@@ -237,6 +255,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
+
         <service
             android:name=".services.notifications.NotificationListener"
             android:exported="false"
@@ -286,10 +305,50 @@
                 <data android:scheme="https" />
             </intent-filter>
             <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="imessage" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+            <meta-data
+                android:name="android.service.chooser.chooser_target_service"
+                android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
+            <meta-data
+                android:name="io.flutter.embedding.android.SplashScreenDrawable"
+                android:resource="@drawable/launch_background" />
+            <meta-data
+                android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
+                android:value="true" />
+        </activity>
+        <activity
+            android:name=".ComposeHomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/NormalTheme">
+            <!-- Main entry point; the Flutter UI (MainActivity) is reachable via the "Legacy" menu. -->
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Sharing into OpenBubbles (moved from MainActivity); direct share targets come from ShareTargets -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
 
@@ -361,48 +420,14 @@
                 <data android:mimeType="audio/*" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="imessage" />
-            </intent-filter>
-            
-            <intent-filter>
-                <action android:name="android.intent.action.SENDTO" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="sms" />
-                <data android:scheme="smsto" />
-                <data android:scheme="mms" />
-                <data android:scheme="mmsto" />
-            </intent-filter>
-
-            <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.DIRECT_SHARE" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
-            <meta-data
-                android:name="android.service.chooser.chooser_target_service"
-                android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
-            <meta-data
-                android:name="io.flutter.embedding.android.SplashScreenDrawable"
-                android:resource="@drawable/launch_background" />
-            <meta-data
-                android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
-                android:value="true" />
         </activity>
-        <activity
-            android:name=".ComposeHomeActivity"
-            android:theme="@style/NormalTheme"
-            android:exported="false" />
         <activity
             android:name=".BubbleActivity"
             android:allowEmbedded="true"
@@ -422,7 +447,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-<meta-data
+        <!-- Android Auto: message notifications (MessagingStyle + Reply + Mark as read, built by
+             CreateIncomingMessageNotification) are shown and read aloud in the car. -->
+        <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
         <meta-data

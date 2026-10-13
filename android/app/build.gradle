@@ -418,6 +418,8 @@ configurations.all { configuration ->
 }
 
 dependencies {
+    implementation 'androidx.legacy:legacy-support-v13:1.0.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation "io.objectbox:objectbox-kotlin:$objectboxVersion"
     // Jetpack Compose
     def compose_bom = platform("androidx.compose:compose-bom:2024.09.02")

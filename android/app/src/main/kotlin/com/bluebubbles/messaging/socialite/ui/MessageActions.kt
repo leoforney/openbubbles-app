@@ -13,14 +13,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.AddReaction
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +55,17 @@ fun MessageActionsDialog(
     onReply: () -> Unit,
     onCopy: () -> Unit,
     onDismiss: () -> Unit,
+    onEdit: () -> Unit = {},
+    onUnsend: () -> Unit = {},
+    onSelect: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
+    val now = System.currentTimeMillis()
+    val ownAndSent = !message.isIncoming && !message.isSending && !message.isError && !message.isUnsent
+    val canEdit = ownAndSent && message.text.isNotBlank() &&
+        now - message.date < com.bluebubbles.messaging.services.messaging.MessageActions.EDIT_WINDOW_MS &&
+        message.editCount < com.bluebubbles.messaging.services.messaging.MessageActions.MAX_EDITS
+    val canUnsend = ownAndSent && now - message.date < com.bluebubbles.messaging.services.messaging.MessageActions.UNSEND_WINDOW_MS
     var showEmojiPicker by remember { mutableStateOf(false) }
     val mine = message.reactions.firstOrNull { !it.isIncoming }
     val myReaction = mine?.let { if (it.type == "emoji") it.emoji else it.type }
@@ -102,13 +118,56 @@ fun MessageActionsDialog(
                         modifier = Modifier.clickable { onReply(); onDismiss() }
                     )
                 }
-                if (message.text.isNotEmpty()) {
+                if (canEdit) {
+                    val left = com.bluebubbles.messaging.services.messaging.MessageActions.MAX_EDITS - message.editCount
+                    ListItem(
+                        headlineContent = { Text("Edit") },
+                        supportingContent = { Text("$left edit${if (left == 1) "" else "s"} left") },
+                        leadingContent = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        modifier = Modifier.clickable { onEdit(); onDismiss() }
+                    )
+                }
+                if (canUnsend) {
+                    ListItem(
+                        headlineContent = { Text("Undo send") },
+                        leadingContent = { Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null) },
+                        modifier = Modifier.clickable { onUnsend(); onDismiss() }
+                    )
+                }
+                val cleanText = remember(message.text) { message.text.replace("\uFFFC", "").replace("\uFFFD", "").trim() }
+                if (cleanText.isNotEmpty()) {
                     ListItem(
                         headlineContent = { Text("Copy text") },
                         leadingContent = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                         modifier = Modifier.clickable { onCopy(); onDismiss() }
                     )
                 }
+                if (message.attachments.isNotEmpty()) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+                    ListItem(
+                        headlineContent = {
+                            Text(if (message.attachments.size > 1) "Save all media (${message.attachments.size})" else "Save to device")
+                        },
+                        leadingContent = { Icon(Icons.Default.Download, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            coroutineScope.launch {
+                                com.bluebubbles.messaging.utils.MediaSaver.saveAllAttachments(context, message.attachments)
+                            }
+                            onDismiss()
+                        }
+                    )
+                }
+                ListItem(
+                    headlineContent = { Text("Select") },
+                    leadingContent = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                    modifier = Modifier.clickable { onSelect(); onDismiss() }
+                )
+                ListItem(
+                    headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    leadingContent = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    modifier = Modifier.clickable { onDelete(); onDismiss() }
+                )
             }
         }
     }

@@ -47,6 +47,16 @@ internal object IncomingNotifier {
         }
     }
 
+    /** Re-posts an already shown message notification with its (now downloaded) image. */
+    fun addImageToPosted(context: Context, chat: ChatEntity, msg: MessageEntity) {
+        try {
+            val handle = handleOf(msg) ?: return
+            post(context, chat, msg, handle, notifyAnyways = false, updateExisting = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to add image to notification for ${msg.guid}", e)
+        }
+    }
+
     fun clearChatNotification(context: Context, chat: ChatEntity) {
         DeleteNotificationHandler().deleteNotification(context, chat.id.toInt(), Constants.newMessageNotificationTag)
     }
@@ -75,14 +85,15 @@ internal object IncomingNotifier {
         }
     }
 
-    private fun post(context: Context, chat: ChatEntity, msg: MessageEntity, handle: HandleEntity, notifyAnyways: Boolean) {
+    private fun post(context: Context, chat: ChatEntity, msg: MessageEntity, handle: HandleEntity, notifyAnyways: Boolean, updateExisting: Boolean = false) {
         val address = handle.address ?: ""
         val (contactName, contactAvatar) = ContactUtils.getContactInfo(context, address)
         val senderName = contactName ?: address
         val isGroup = ChatResolver.isGroup(chat)
         val title = if (isGroup) groupTitle(context, chat) else senderName
         val chatIcon = if (isGroup) chat.customAvatarPath?.let { File(it) }?.takeIf { it.isFile }?.readBytes() else contactAvatar
-        val text = if (FlutterPrefs.bool(context, "hideTextPreviews", false)) "iMessage" else notificationText(msg)
+        val text = if (FlutterPrefs.bool(context, "hideTextPreviews", false)) "iMessage" else
+            com.bluebubbles.messaging.objectbox.MessagePreview.text(msg) { rowId -> nameForHandle(context, rowId) }
         val image = attachmentsOf(msg).firstOrNull { it.mimeType?.startsWith("image/") == true }
             ?.let { AttachmentDownloader.fileFor(context, it) }?.takeIf { it.isFile }
 
@@ -103,6 +114,7 @@ internal object IncomingNotifier {
             "message_is_from_me" to false,
             "attachment_path" to image?.absolutePath,
             "attachment_type" to image?.let { attachmentsOf(msg).first { a -> a.mimeType?.startsWith("image/") == true }.mimeType },
+            "update_existing" to updateExisting,
         )
         CreateIncomingMessageNotification().handleMethodCall(MethodCall(CreateIncomingMessageNotification.tag, args), object : MethodChannel.Result {
             override fun success(result: Any?) {}
@@ -121,42 +133,10 @@ internal object IncomingNotifier {
     private fun attachmentsOf(msg: MessageEntity): List<AttachmentEntity> =
         ObjectBox.store.boxFor<AttachmentEntity>().query { apply(AttachmentEntity_.messageIdId.equal(msg.id)) }.find()
 
-    /** Simplified port of `MessageHelper.getNotificationText`. */
-    private fun notificationText(msg: MessageEntity): String {
-        if (msg.expressiveSendStyleId == "com.apple.MobileSMS.expressivesend.invisibleink") return "Message sent with Invisible Ink"
-        msg.associatedMessageType?.let { type -> return reactionText(type, msg) }
-        val text = msg.text?.trim().orEmpty()
-        val attachments = attachmentsOf(msg)
-        if (text.isNotEmpty()) return text
-        if (attachments.isEmpty()) return if (msg.dateEdited != null) "Unsent message" else "Empty message"
-        if (attachments.size > 1) return "${attachments.size} attachments"
-        val mime = attachments.first().mimeType ?: ""
-        return when {
-            mime.startsWith("image/gif") -> "🖼️ GIF"
-            mime.startsWith("image/") -> "📷 Image"
-            mime.startsWith("video/") -> "🎥 Movie"
-            mime.startsWith("audio/") -> "🎵 Audio message"
-            else -> "1 attachment"
-        }
-    }
-
-    private fun reactionText(type: String, msg: MessageEntity): String {
-        val removed = type.startsWith("-")
-        val base = type.removePrefix("-")
-        val target = msg.associatedMessageGuid?.let { g ->
-            ObjectBox.store.boxFor<MessageEntity>().query { apply(MessageEntity_.guid.equal(g)) }.findFirst()
-        }
-        val about = target?.text?.trim()?.takeIf { it.isNotEmpty() }?.let { "“$it”" } ?: "a message"
-        if (removed) return "Removed a reaction from $about"
-        return when (base) {
-            "love" -> "Loved $about"
-            "like" -> "Liked $about"
-            "dislike" -> "Disliked $about"
-            "laugh" -> "Laughed at $about"
-            "emphasize" -> "Emphasized $about"
-            "question" -> "Questioned $about"
-            "emoji" -> "Reacted ${msg.associatedMessageEmoji ?: ""} to $about"
-            else -> "Reacted to $about"
-        }
+    private fun nameForHandle(context: Context, rowId: Long?): String? {
+        if (rowId == null || rowId == 0L) return null
+        val h = ObjectBox.store.boxFor<HandleEntity>().query { apply(HandleEntity_.originalROWID.equal(rowId)) }.findFirst() ?: return null
+        val address = h.address ?: return null
+        return ContactUtils.getContactInfo(context, address).first ?: h.contactRelationId.target?.displayName ?: address
     }
 }

@@ -97,9 +97,20 @@ internal object AttachmentDownloader {
         if (plist.isNullOrEmpty()) return
         try {
             val native = attachmentFromPlist(plist)
-            state.downloadAttachment(native, file.absolutePath, object : NativeProgressCallback {
-                override fun onProgress(progress: ULong, total: ULong) {}
-            })
+            // Retry transient failures (e.g. "Send timeout" when the Apple connection blips).
+            var attempt = 0
+            while (true) {
+                try {
+                    state.downloadAttachment(native, file.absolutePath, object : NativeProgressCallback {
+                        override fun onProgress(progress: ULong, total: ULong) {}
+                    })
+                    break
+                } catch (e: uniffi.rust_lib_bluebubbles.NativeMsgException.Retryable) {
+                    if (++attempt >= 3) throw e
+                    Log.w(TAG, "Download of ${att.guid} failed (attempt $attempt): ${e.msg}; retrying")
+                    kotlinx.coroutines.delay(2_000L * attempt)
+                }
+            }
             if (att.uti == "com.apple.coreaudio-format" || file.name.endsWith(".caf", ignoreCase = true)) convertCaf(file)
             // touch the row so observers (Compose/Flutter) re-render with the file present
             ObjectBox.update<AttachmentEntity>(att.id) { it.totalBytes = it.totalBytes ?: file.length() }

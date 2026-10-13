@@ -4869,7 +4869,13 @@ class RustPushService extends GetxService {
         }
         var keychain = pushService.state?.icloudServices?.keychain;
         if (keychain != null) {
-          cachedInClique = await api.isInClique(keychain: keychain);
+          // Must not fail initFuture: every forwarded push (APNMsg) awaits it, so a keychain
+          // panic here made all of them fail and get dropped.
+          try {
+            cachedInClique = await api.isInClique(keychain: keychain);
+          } catch (e, s) {
+            Logger.error("Failed to check keychain clique state", error: e, trace: s);
+          }
         }
       }
     })();

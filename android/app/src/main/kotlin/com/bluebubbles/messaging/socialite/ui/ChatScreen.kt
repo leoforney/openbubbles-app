@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,25 +48,41 @@ private const val PAGE_SIZE = 50L
 @Composable
 fun ChatScreen(
     chat: Chat,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    /** Content shared into the app (share sheet), prefilled into the input bar. */
+    initialText: String? = null,
+    initialMedia: List<Uri> = emptyList(),
 ) {
     val context = LocalContext.current
 
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(initialText ?: "") }
     var messages by remember { mutableStateOf<List<Message>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var hasMore by remember { mutableStateOf(true) }
     var viewingAttachment by remember { mutableStateOf<Attachment?>(null) }
-    var selectedMediaUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var selectedMediaUris by remember { mutableStateOf(initialMedia) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var pendingSendScroll by remember { mutableStateOf(false) }
     var replyTo by remember(chat.id) { mutableStateOf<Message?>(null) }
     var actionMessage by remember { mutableStateOf<Message?>(null) }
+    var editing by remember(chat.id) { mutableStateOf<Message?>(null) }
+    // Non-null = selection mode (guids of the selected messages)
+    var selected by remember(chat.id) { mutableStateOf<Set<String>?>(null) }
+    var confirmDelete by remember { mutableStateOf<Set<String>?>(null) }
+
+    androidx.activity.compose.BackHandler(enabled = selected != null || editing != null) {
+        if (selected != null) selected = null else { editing = null; text = "" }
+    }
     val recorder = remember { com.bluebubbles.messaging.services.messaging.VoiceRecorder(context.applicationContext) }
     var isRecording by remember { mutableStateOf(false) }
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { recorder.cancel() } }
+    androidx.compose.runtime.DisposableEffect(chat.id) {
+        onDispose {
+            recorder.cancel()
+            com.bluebubbles.messaging.objectbox.ChatRepository.cleanupIfEmpty(chat.id)
+        }
+    }
 
     fun scrollToBottomOnSend() {
         if (listState.firstVisibleItemIndex <= 1) {
@@ -183,6 +201,23 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
+            val selection = selected
+            if (selection != null) {
+                TopAppBar(
+                    title = { Text("${selection.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { selected = null }) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = "Cancel selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { confirmDelete = selection }, enabled = selection.isNotEmpty()) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Delete, contentDescription = "Delete selected")
+                        }
+                    }
+                )
+                return@Scaffold
+            }
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -224,6 +259,15 @@ fun ChatScreen(
                     cameraLauncher.launch(uri)
                 },
                 onSendClick = {
+                    val target = editing
+                    if (target != null) {
+                        if (text.isNotBlank() && text != target.text) {
+                            com.bluebubbles.messaging.services.messaging.MessageActions.edit(context, target.guid, text.trim())
+                        }
+                        editing = null
+                        text = ""
+                        return@ChatInputBar
+                    }
                     scrollToBottomOnSend()
                     // All picked media + text go out as one message (a stack on iPhones).
                     val attachmentPaths = selectedMediaUris.mapNotNull { uriToFile(context, it) }
@@ -234,6 +278,8 @@ fun ChatScreen(
                 },
                 replyTo = replyTo?.let { com.bluebubbles.messaging.socialite.model.ReplyPreview(it.guid, it.text.ifEmpty { "Attachment" }, if (it.isIncoming) it.senderName ?: chat.name else "yourself") },
                 onCancelReply = { replyTo = null },
+                editingOriginal = editing?.text,
+                onCancelEdit = { editing = null; text = "" },
                 isRecording = isRecording,
                 onMicClick = {
                     if (isRecording || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -258,6 +304,11 @@ fun ChatScreen(
                 onLoadMore = { loadMore() },
                 onAttachmentClick = { viewingAttachment = it },
                 onLongPress = { if (!it.isGroupEvent) actionMessage = it },
+                selectedGuids = selected,
+                onToggleSelect = { m ->
+                    val current = selected ?: emptySet()
+                    selected = if (m.guid in current) current - m.guid else current + m.guid
+                },
                 listState = listState
             )
 
@@ -269,10 +320,37 @@ fun ChatScreen(
                     },
                     onReply = { replyTo = target },
                     onCopy = {
+                        val clean = target.text.replace("\uFFFC", "").replace("\uFFFD", "").trim()
                         val cm = context.getSystemService(android.content.ClipboardManager::class.java)
-                        cm.setPrimaryClip(android.content.ClipData.newPlainText("message", target.text))
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("message", clean))
                     },
                     onDismiss = { actionMessage = null },
+                    onEdit = {
+                        replyTo = null
+                        editing = target
+                        text = target.text
+                    },
+                    onUnsend = { com.bluebubbles.messaging.services.messaging.MessageActions.unsend(context, target.guid) },
+                    onSelect = { selected = setOf(target.guid) },
+                    onDelete = { confirmDelete = setOf(target.guid) },
+                )
+            }
+
+            confirmDelete?.let { guids ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { confirmDelete = null },
+                    title = { Text(if (guids.size == 1) "Delete message?" else "Delete ${guids.size} messages?") },
+                    text = { Text("They are removed from this device and from your other Apple devices. Others in the conversation keep their copy.") },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            com.bluebubbles.messaging.services.messaging.MessageActions.delete(context, chat.id, guids.toList())
+                            confirmDelete = null
+                            selected = null
+                        }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = { confirmDelete = null }) { Text("Cancel") }
+                    }
                 )
             }
 

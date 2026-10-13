@@ -162,6 +162,10 @@ internal class IncomingMessageHandler(private val context: Context, private val 
                 else -> null
             }
         }
+        if (saved != null && !saved.isNew) {
+            // Re-delivered message: resume any attachment download that did not finish.
+            AttachmentDownloader.downloadIfEnabled(context, state, saved.message.id)
+        }
         if (saved != null && saved.isNew) {
             notifyWithImage(saved)
             if (saved.message.isFromMe != true && ActiveChatTracker.isActive(saved.chat.id)) {
@@ -187,9 +191,16 @@ internal class IncomingMessageHandler(private val context: Context, private val 
             return
         }
         notifyScope.launch {
-            kotlinx.coroutines.withTimeoutOrNull(IMAGE_WAIT_MS) { AttachmentDownloader.downloadNow(context, state, image) }
+            val ready = kotlinx.coroutines.withTimeoutOrNull(IMAGE_WAIT_MS) { AttachmentDownloader.downloadNow(context, state, image) } == true
             IncomingNotifier.onNewMessage(context, saved.chat, saved.message, notifyAnyways = false)
             AttachmentDownloader.downloadIfEnabled(context, state, saved.message.id, skipId = image.id)
+            if (!ready) {
+                // Too slow for the first post: keep downloading and add the image to the posted
+                // notification once it arrives (silently, no second alert).
+                if (AttachmentDownloader.downloadNow(context, state, image)) {
+                    IncomingNotifier.addImageToPosted(context, saved.chat, saved.message)
+                }
+            }
         }
     }
 
@@ -333,42 +344,13 @@ internal class IncomingMessageHandler(private val context: Context, private val 
     /** Port of the `Message_Edit` branch. Throws if the target is unknown so the push is retried. */
     private fun applyEdit(inst: NativeMessageInst, m: NativeMessage.Edit) {
         val target = findMessage(m.tuuid) ?: throw IllegalStateException("edit target ${m.tuuid} not found")
-        target.verificationFailed = inst.verificationFailed
-        val existingBody = MessageFormats.firstBody(target.dbAttributedBody)
-        val inclusive = MessageFormats.partsToBody(m.newParts, inst.id, existingBody)
-        val edited = MessageFormats.partsToBody(m.newParts, inst.id, null)
-        target.text = inclusive.text
-        target.dateEdited = Date()
-
-        val (list, info) = MessageFormats.summaryInfo(target.dbMessageSummaryInfo)
-        val part = m.editPart.toInt()
-        val editedParts = info.getJSONArray("editedParts")
-        with(MessageFormats) { if (!editedParts.containsInt(part)) editedParts.put(part) }
-        val content = info.getJSONObject("editedContent")
-        val key = part.toString()
-        if (!content.has(key)) {
-            val original = target.dbAttributedBody?.let { runCatching { JSONArray(it) }.getOrNull() } ?: JSONArray()
-            content.put(key, JSONArray().put(JSONObject()
-                .put("text", JSONObject().put("values", original))
-                .put("date", (target.dateCreated?.time ?: 0L).toDouble())))
-        }
-        content.getJSONArray(key).put(JSONObject()
-            .put("text", JSONObject().put("values", JSONArray().put(edited.attributedBody)))
-            .put("date", inst.sentTimestamp.toDouble()))
-        target.dbMessageSummaryInfo = list.toString()
-        target.dbAttributedBody = MessageFormats.bodyList(inclusive.attributedBody)
-        messageBox.put(target)
+        MessageMutations.applyEdit(target, m.newParts, m.editPart.toInt(), inst.id, inst.sentTimestamp.toLong(), inst.verificationFailed)
     }
 
     /** Port of the `Message_Unsend` branch (without Dart's force-unwrap crash). */
     private fun applyUnsend(inst: NativeMessageInst, m: NativeMessage.Unsend) {
         val target = findMessage(m.tuuid) ?: throw IllegalStateException("unsend target ${m.tuuid} not found")
-        target.verificationFailed = inst.verificationFailed
-        target.dateEdited = Date()
-        val (list, info) = MessageFormats.summaryInfo(target.dbMessageSummaryInfo)
-        info.getJSONArray("retractedParts").put(m.editPart.toInt())
-        target.dbMessageSummaryInfo = list.toString()
-        messageBox.put(target)
+        MessageMutations.applyUnsend(target, listOf(m.editPart.toInt()), inst.verificationFailed)
     }
 
     private fun handleError(inst: NativeMessageInst, m: NativeMessage.Error) {

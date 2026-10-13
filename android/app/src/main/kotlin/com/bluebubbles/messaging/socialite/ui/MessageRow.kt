@@ -6,6 +6,13 @@ import androidx.compose.animation.core.spring
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,9 +49,37 @@ fun MessageRow(
     isFirstInGroup: Boolean,
     isLastInGroup: Boolean,
     onAttachmentClick: (Attachment) -> Unit,
-    onLongPress: (Message) -> Unit = {}
+    onLongPress: (Message) -> Unit = {},
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onToggleSelect: (Message) -> Unit = {}
 ) {
-    if (message.isGroupEvent) {
+    if (selectionMode && !message.isGroupEvent) {
+        // Selection mode: the whole row is one tap target (no photo viewer / links / swipe).
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else androidx.compose.ui.graphics.Color.Transparent)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (selected) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (selected) "Selected" else "Not selected",
+                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Box(Modifier.weight(1f)) {
+                    MessageRow(message, isGroup, isLastByMe, isFirstInGroup, isLastInGroup, onAttachmentClick = {}, onLongPress = {})
+                }
+            }
+            Box(Modifier.matchParentSize().clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) { onToggleSelect(message) })
+        }
+        return
+    }
+    if (message.isGroupEvent || message.isUnsent) {
         Text(
             text = message.text,
             style = MaterialTheme.typography.labelSmall,
@@ -123,7 +158,8 @@ fun MessageRow(
                     isGroup = isGroup,
                     isFirstInGroup = isFirstInGroup,
                     isLastInGroup = isLastInGroup,
-                    onAttachmentClick = onAttachmentClick
+                    onAttachmentClick = onAttachmentClick,
+                    onLongClick = { onLongPress(message) }
                 )
                 }
 
