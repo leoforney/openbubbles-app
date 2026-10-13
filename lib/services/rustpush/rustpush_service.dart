@@ -4831,7 +4831,9 @@ class RustPushService extends GetxService {
       if (state != null && !ss.settings.finishedSetup.value) {
         handleRegistered();
         ss.settings.finishedSetup.value = true;
-        ss.saveSettings();
+        await ss.saveSettings();
+        // Setup completed automatically: continue in the native (Compose) app.
+        setup.openNativeHomeAfterSetup();
         try {
           Get.offAll(() => ConversationList(
               showArchivedChats: false,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bluebubbles/helpers/backend/startup_tasks.dart';
 import 'package:bluebubbles/helpers/network/network_tasks.dart';
 import 'package:bluebubbles/services/services.dart';
@@ -20,5 +22,15 @@ class SetupService extends GetxService {
 
     await StartupTasks.onStartup();
     await NetworkTasks.onConnect();
+
+    // Setup is done: hand over to the native (Compose) app, replacing the Flutter UI.
+    await openNativeHomeAfterSetup();
+  }
+
+  Future<void> openNativeHomeAfterSetup() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await mcs.invokeMethod("launch-native-home", {"replaceFlutter": true});
+    } catch (_) {}
   }
 }

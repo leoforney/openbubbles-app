@@ -144,6 +144,10 @@ class MethodCallHandler {
             "launch-native-home" -> {
                 val intent = android.content.Intent(context, com.bluebubbles.messaging.ComposeHomeActivity::class.java)
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                // After setup: replace the Flutter UI so Back doesn't return to setup/legacy screens.
+                if (call.argument<Boolean>("replaceFlutter") == true) {
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
                 context.startActivity(intent)
                 result.success(null)
             }
